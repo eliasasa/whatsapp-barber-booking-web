@@ -1,0 +1,15 @@
+{
+  "Next Image JSX": {
+    "scope": "typescriptreact,javascriptreact",
+    "prefix": ["image", "Imag"],
+    "description": "Insert Next.js Image JSX",
+    "body": [
+      "<Image",
+      "  src=\"${1:/images/example.jpg}\"",
+      "  alt=\"${2:Example image}\"",
+      "  width={${3:600}}",
+      "  height={${4:400}}",
+      "/>"
+    ]
+  }
+}

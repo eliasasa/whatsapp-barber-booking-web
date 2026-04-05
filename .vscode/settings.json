@@ -1,0 +1,15 @@
+{
+  "editor.tabCompletion": "on",
+  "editor.snippetSuggestions": "top",
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": true
+  },
+  "editor.codeActionsOnSave": {
+    "source.addMissingImports": "always"
+  },
+  "typescript.suggest.autoImports": true,
+  "javascript.suggest.autoImports": true,
+  "typescript.preferences.includePackageJsonAutoImports": "on"
+}
