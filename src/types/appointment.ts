@@ -1,4 +1,5 @@
 export type AppointmentClient = {
+  id?: string;
   name: string;
 };
 

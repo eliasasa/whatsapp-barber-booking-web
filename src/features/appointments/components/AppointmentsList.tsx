@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
 import { cancelAppointment } from "@/features/appointments/api/cancelAppointment";
 import { listAppointments } from "@/features/appointments/api/listAppointments";
 import type { Appointment } from "@/types/appointment";
 
 export function AppointmentsList() {
+  const router = useRouter();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +73,10 @@ export function AppointmentsList() {
     }
   }
 
+  function handleEdit(appointment: Appointment) {
+    router.push(`/agendamentos/editar?id=${encodeURIComponent(appointment.id)}`);
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -116,7 +123,7 @@ export function AppointmentsList() {
         </div>
       )}
 
-      <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+      <div className="space-y-3 max-h-150 overflow-y-auto pr-2">
         {appointments.map((appointment) => {
           const isCanceled = appointment.status === "CANCELED";
           const appointmentTime = new Date(appointment.startAt);
@@ -173,36 +180,31 @@ export function AppointmentsList() {
                 </span>
               </div>
 
-              {/* Button */}
-              <button
-                type="button"
-                onClick={() => handleCancel(appointment.id)}
-                disabled={cancelingId === appointment.id || isCanceled}
-                className="w-full py-2.5 px-4 rounded-lg font-semibold text-xs transition-all duration-300 flex items-center justify-center gap-2"
-                style={{
-                  background: isCanceled
-                    ? "#2a2a2a"
-                    : cancelingId === appointment.id
-                      ? "#e63946"
-                      : "#d4af37",
-                  color: isCanceled
-                    ? "#808080"
-                    : cancelingId === appointment.id
-                      ? "#eaeaea"
-                      : "#121212",
-                  cursor: isCanceled || cancelingId === appointment.id ? "not-allowed" : "pointer",
-                  opacity: isCanceled || cancelingId === appointment.id ? 0.5 : 1,
-                }}
-              >
-                {cancelingId === appointment.id
-                  ? <>
-                      <span className="inline-block animate-spin">⌛</span>
-                      Cancelando...
-                    </>
-                  : isCanceled
-                    ? "Cancelado"
-                    : "Cancelar Agendamento"}
-              </button>
+              {/* Acoes do atendimento */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={isCanceled ? "subtle" : "danger"}
+                  size="sm"
+                  fullWidth
+                  isLoading={cancelingId === appointment.id}
+                  onClick={() => handleCancel(appointment.id)}
+                  disabled={isCanceled}
+                >
+                  {isCanceled ? "Cancelado" : "Cancelar Agendamento"}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  fullWidth
+                  onClick={() => handleEdit(appointment)}
+                >
+                  Editar
+                </Button>
+              </div>
+
             </article>
           );
         })}
