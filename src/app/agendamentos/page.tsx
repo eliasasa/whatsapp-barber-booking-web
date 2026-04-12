@@ -1,3 +1,5 @@
+import { AppointmentsList } from "@/features/appointments";
+
 export default function AgendamentosPage() {
   return (
     <section className="max-w-7xl mx-auto px-6 py-12">
@@ -7,6 +9,9 @@ export default function AgendamentosPage() {
       <p style={{ color: "#b0b0b0" }}>
         Aqui voce gerencia os horarios e status dos atendimentos.
       </p>
+      <div className="mt-8">
+        <AppointmentsList />
+      </div>
     </section>
   );
 }
