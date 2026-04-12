@@ -99,13 +99,17 @@ export default function EditarAgendamentoPage() {
       setSuccessMessage(null);
 
       const isoStartAt = new Date(startAtInput).toISOString();
-      const updated = await rescheduleAppointment(id, { startAt: isoStartAt });
+      const updated = await rescheduleAppointment(id, { newStartAt: isoStartAt });
 
       setAppointment(updated);
       setStartAtInput(toDatetimeLocalValue(updated.startAt));
       setSuccessMessage("Agendamento reagendado com sucesso.");
-    } catch {
-      setError("Nao foi possivel reagendar o atendimento.");
+    } catch (caughtError) {
+      if (caughtError instanceof Error) {
+        setError(caughtError.message);
+      } else {
+        setError("Nao foi possivel reagendar o atendimento.");
+      }
     } finally {
       setIsSaving(false);
     }

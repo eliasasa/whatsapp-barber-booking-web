@@ -3,7 +3,7 @@ import { apiFetch } from "@/lib/http";
 import type { Appointment } from "@/types/appointment";
 
 type ReschedulePayload = {
-  startAt: string;
+  newStartAt: string;
 };
 
 export async function rescheduleAppointment(
