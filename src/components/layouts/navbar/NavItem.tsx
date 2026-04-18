@@ -21,12 +21,12 @@ export default function NavItem({ label, url, mobile = false, onNavigate }: NavI
                 onClick={onNavigate}
                 aria-current={isActive ? "page" : undefined}
                 className={[
-                    "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37] focus-visible:ring-offset-2 focus-visible:ring-offset-[#121212]",
+                    "inline-flex items-center rounded-xl px-3 py-2 text-sm font-medium tracking-[0.01em] transition-all duration-300",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-dark)]",
                     mobile ? "w-full" : "whitespace-nowrap",
                     isActive
-                        ? "bg-[#d4af37]/15 text-[#d4af37] ring-1 ring-[#d4af37]/30"
-                        : "text-[#b0b0b0] hover:bg-[#2a2a2a] hover:text-[#eaeaea]",
+                        ? "bg-[var(--color-accent)]/16 text-[var(--color-accent-hover)] ring-1 ring-[var(--color-accent)]/30"
+                        : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-soft)] hover:text-[var(--color-text-primary)]",
                 ].join(" ")}
             >
                 {label}

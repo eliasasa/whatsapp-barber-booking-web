@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "WhatsApp Barber - Painel",
-  description: "Painel de operacao para agendamentos da barbearia",
+  description: "Painel de operação para agendamentos da barbearia",
 };
 
 export default function RootLayout({
@@ -29,20 +29,16 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-screen flex flex-col">
-        {/* Premium Header */}
         <Navbar />
 
-        {/* Main Content */}
-        <main className="flex-1">
+        <main className="flex-1 pb-8 sm:pb-10">
           {children}
         </main>
 
-        {/* Footer */}
-        <footer
-          className="border-t text-center py-4 text-xs"
-          style={{ borderColor: "#2a2a2a", color: "#808080" }}
-        >
-          <p>Barber Dashboard v1.0.0</p>
+        <footer className="container-shell mt-4 pb-6 pt-2 text-center text-xs text-[var(--color-text-disabled)] sm:pb-8">
+          <div className="surface-card px-4 py-3">
+            <p>Barber Dashboard v1.0.0</p>
+          </div>
         </footer>
       </body>
     </html>

@@ -17,11 +17,11 @@ export default function Navbar() {
     ];
 
     return (
-        <header className="sticky top-0 z-40 border-b border-[#2a2a2a] bg-[#1e1e1e]/85 backdrop-blur-md">
-            <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 md:px-6">
+        <header className="sticky top-0 z-40 px-2 pt-2 sm:px-4 sm:pt-3">
+            <nav className="container-shell surface-panel flex items-center justify-between px-3 py-3 md:px-5">
                 <Link
                     href="/"
-                    className="rounded-lg p-1 transition-colors duration-300 hover:bg-[#2a2a2a]/60"
+                    className="group flex items-center gap-3 rounded-xl border border-transparent px-2 py-1 transition-all duration-300 hover:border-[var(--color-border-soft)] hover:bg-[var(--color-bg-soft)]/40"
                     onClick={() => setIsOpen(false)}
                 >
                     <Image
@@ -29,11 +29,16 @@ export default function Navbar() {
                         width={150}
                         height={50}
                         alt="Logo"
-                        className="h-full w-32 object-cover md:w-36"
+                        className="h-full w-28 object-contain md:w-32"
                     />
+
+                    <div className="hidden sm:block">
+                        <p className="text-[0.68rem] font-bold tracking-[0.2em] text-[var(--color-accent)]">PAINEL</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">Operação da barbearia</p>
+                    </div>
                 </Link>
 
-                <ul className="hidden list-none items-center gap-1 rounded-xl border border-[#2a2a2a] bg-[#121212]/35 p-1 md:flex">
+                <ul className="hidden list-none items-center gap-1 rounded-2xl border border-[var(--color-border-soft)] bg-[var(--color-bg-dark)]/60 p-1 md:flex">
                     {items.map((item) => (
                         <NavItem key={item.url} url={item.url} label={item.label} />
                     ))}
@@ -50,7 +55,7 @@ export default function Navbar() {
                     aria-label="Abrir menu"
                     aria-expanded={isOpen}
                     aria-controls="navbar-mobile-menu"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#2a2a2a] bg-[#121212] text-[#eaeaea] transition-colors hover:border-[#d4af37]/60 hover:text-[#d4af37] md:hidden"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--color-border-soft)] bg-[var(--color-bg-dark)] text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-accent)]/60 hover:text-[var(--color-accent)] md:hidden"
                     onClick={() => setIsOpen((prev) => !prev)}
                 >
                     <span className="sr-only">Menu</span>
@@ -80,7 +85,7 @@ export default function Navbar() {
             <div
                 id="navbar-mobile-menu"
                 className={[
-                    "overflow-hidden border-t border-[#2a2a2a] bg-[#1e1e1e] transition-all duration-300 md:hidden",
+                    "container-shell overflow-hidden rounded-b-[var(--radius-xl)] border-x border-b border-[var(--color-border-soft)] bg-[var(--color-bg-card)] transition-all duration-300 md:hidden",
                     isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
                 ].join(" ")}
             >

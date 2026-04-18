@@ -2,14 +2,16 @@ import { AppointmentsList } from "@/features/appointments";
 
 export default function AgendamentosPage() {
   return (
-    <section className="max-w-7xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold mb-2" style={{ color: "#d4af37" }}>
-        Agendamentos
-      </h1>
-      <p style={{ color: "#b0b0b0" }}>
-        Aqui voce gerencia os horarios e status dos atendimentos.
-      </p>
-      <div className="mt-8">
+    <section className="container-shell pt-6 sm:pt-8">
+      <div className="surface-panel reveal-up px-6 py-7 sm:px-8 sm:py-8">
+        <p className="section-title">Agenda</p>
+        <h1 className="mt-3 text-3xl font-semibold text-[var(--color-text-primary)] sm:text-4xl">Agendamentos</h1>
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)] sm:text-base">
+          Gerencie horários, status e operações do dia com foco em velocidade.
+        </p>
+      </div>
+
+      <div className="surface-panel mt-6 reveal-up p-4 sm:p-6" style={{ animationDelay: "80ms" }}>
         <AppointmentsList />
       </div>
     </section>

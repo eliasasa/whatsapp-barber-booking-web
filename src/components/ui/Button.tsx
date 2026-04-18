@@ -17,25 +17,20 @@ function joinClasses(...classes: Array<string | false | undefined>) {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-    // A variante primária deve chamar mais atenção na hierarquia visual.
     solid:
-    "bg-[var(--color-accent)] text-[#121212] border border-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] hover:border-[var(--color-accent-hover)]",
+    "bg-[var(--color-accent)] text-[#161412] border border-[var(--color-accent)] shadow-[0_10px_24px_rgba(205,163,79,0.22)] hover:bg-[var(--color-accent-hover)] hover:border-[var(--color-accent-hover)] hover:shadow-[0_14px_30px_rgba(223,184,102,0.26)]",
 
-    // Borda com fundo transparente para ações secundárias.
     outline:
-    "bg-transparent text-[var(--color-accent)] border border-[var(--color-accent)] hover:bg-[var(--color-accent)]/10",
+    "bg-transparent text-[var(--color-accent)] border border-[var(--color-border-strong)] hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)]/10",
 
-    // Ghost para ações discretas em áreas densas.
     ghost:
-    "bg-transparent text-[var(--color-text-primary)] border border-transparent hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-accent)]",
+    "bg-transparent text-[var(--color-text-primary)] border border-transparent hover:bg-[var(--color-bg-soft)] hover:text-[var(--color-accent)]",
 
-    // Subtle para botões de apoio sem competir com o CTA principal.
     subtle:
-    "bg-[var(--color-bg-card)] text-[var(--color-text-primary)] border border-[var(--color-bg-hover)] hover:bg-[var(--color-bg-hover)]",
+    "bg-[var(--color-bg-card)] text-[var(--color-text-primary)] border border-[var(--color-border-soft)] hover:bg-[var(--color-bg-soft)]",
 
-    // Botão de alerta/sensível
     danger:
-    "bg-[var(--color-status-busy)] text-[var(--color-text-primary)] border border-[var(--color-status-busy)] hover:bg-[#d12f3d] hover:border-[#d12f3d]"
+    "bg-[var(--color-status-busy)] text-[var(--color-text-primary)] border border-[var(--color-status-busy)] shadow-[0_10px_24px_rgba(216,81,81,0.25)] hover:bg-[#c94646] hover:border-[#c94646]"
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -65,9 +60,10 @@ export function Button({
     return (
         <button
         className={joinClasses(
-            "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-300",
+            "inline-flex items-center justify-center gap-2 rounded-xl font-semibold tracking-[0.01em] transition-all duration-300",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-dark)]",
             focusRingClass,
+            "active:translate-y-px",
             "disabled:cursor-not-allowed disabled:opacity-60",
             variantClasses[variant],
             sizeClasses[size],
