@@ -21,7 +21,7 @@ export default function EditarAgendamentoPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   function handleEditClient(clientId: string) {
-    router.push(`/clientes/editar?id=${encodeURIComponent(clientId)}`);
+    router.push(`/clientes/${encodeURIComponent(clientId)}/editar`);
   }
 
   function toDatetimeLocalValue(value: string) {
@@ -46,7 +46,7 @@ export default function EditarAgendamentoPage() {
     async function loadAppointment() {
       if (!id) {
         if (mounted) {
-          setError("ID do agendamento nao informado na URL.");
+          setError("ID do agendamento não informado na URL.");
           setIsLoading(false);
         }
         return;
@@ -64,7 +64,7 @@ export default function EditarAgendamentoPage() {
         }
       } catch {
         if (mounted) {
-          setError("Nao foi possivel carregar os dados do agendamento.");
+          setError("Não foi possível carregar os dados do agendamento.");
         }
       } finally {
         if (mounted) {
@@ -84,12 +84,12 @@ export default function EditarAgendamentoPage() {
     event.preventDefault();
 
     if (!id) {
-      setError("ID do agendamento nao informado na URL.");
+      setError("ID do agendamento não informado na URL.");
       return;
     }
 
     if (!startAtInput) {
-      setError("Informe a nova data e horario para reagendar.");
+      setError("Informe a nova data e horário para reagendar.");
       return;
     }
 
@@ -108,7 +108,7 @@ export default function EditarAgendamentoPage() {
       if (caughtError instanceof Error) {
         setError(caughtError.message);
       } else {
-        setError("Nao foi possivel reagendar o atendimento.");
+        setError("Não foi possível reagendar o atendimento.");
       }
     } finally {
       setIsSaving(false);
@@ -117,55 +117,60 @@ export default function EditarAgendamentoPage() {
 
   if (isLoading) {
     return (
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        <p style={{ color: "#b0b0b0" }}>Carregando agendamento...</p>
+      <section className="container-shell pt-6 sm:pt-8">
+        <div className="surface-panel p-6 sm:p-8">
+          <p className="text-[var(--color-text-secondary)]">Carregando agendamento...</p>
+        </div>
       </section>
     );
   }
 
   if (error) {
     return (
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        <p style={{ color: "#e63946" }}>{error}</p>
+      <section className="container-shell pt-6 sm:pt-8">
+        <div className="surface-panel border-[var(--color-status-busy)] p-6 sm:p-8">
+          <p className="text-[var(--color-status-busy)]">{error}</p>
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="max-w-7xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold mb-2" style={{ color: "#d4af37" }}>
-        Editar agendamento
-      </h1>
-      <p className="mb-6" style={{ color: "#b0b0b0" }}>
-        Atualize o horario e salve para chamar o endpoint de reagendamento.
-      </p>
+    <section className="container-shell pt-6 sm:pt-8">
+      <div className="surface-panel reveal-up px-6 py-7 sm:px-8 sm:py-8">
+        <p className="section-title">Atualização</p>
+        <h1 className="mt-3 text-3xl font-semibold text-[var(--color-text-primary)] sm:text-4xl">Editar agendamento</h1>
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)] sm:text-base">
+          Atualize o horário e confirme para reagendar no sistema.
+        </p>
+      </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border p-4" style={{ borderColor: "#e63946", background: "rgba(230, 57, 70, 0.12)", color: "#e63946" }}>
+        <div className="mb-4 mt-6 rounded-xl border border-[var(--color-status-busy)] bg-[rgba(216,81,81,0.12)] p-4 text-[var(--color-status-busy)]">
           {error}
         </div>
       )}
 
       {successMessage && (
-        <div className="mb-4 rounded-lg border p-4" style={{ borderColor: "#2ecc71", background: "rgba(46, 204, 113, 0.12)", color: "#2ecc71" }}>
+        <div className="mb-4 mt-6 rounded-xl border border-[var(--color-status-available)] bg-[rgba(49,197,119,0.12)] p-4 text-[var(--color-status-available)]">
           {successMessage}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="rounded-lg border p-6 space-y-6" style={{ borderColor: "#2a2a2a", background: "#1e1e1e" }}>
+      <form onSubmit={handleSubmit} className="surface-panel mt-6 space-y-6 p-6 sm:p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <p className="text-xs mb-1" style={{ color: "#b0b0b0" }}>ID</p>
-            <p style={{ color: "#eaeaea" }}>{appointment?.id ?? "-"}</p>
+            <p className="mb-1 text-xs uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">ID</p>
+            <p className="text-[var(--color-text-primary)]">{appointment?.id ?? "-"}</p>
           </div>
           <div>
-            <p className="text-xs mb-1" style={{ color: "#b0b0b0" }}>Status</p>
-            <p style={{ color: "#eaeaea" }}>{appointment?.status ?? "-"}</p>
+            <p className="mb-1 text-xs uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Status</p>
+            <p className="text-[var(--color-text-primary)]">{appointment?.status ?? "-"}</p>
           </div>
           <div>
-            <p className="text-xs mb-1" style={{ color: "#b0b0b0" }}>Cliente</p>
+            <p className="mb-1 text-xs uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Cliente</p>
             <div className="flex items-center gap-2">
-              <p style={{ color: "#eaeaea" }}>{appointment?.client?.name ?? "-"}</p>
+              <p className="text-[var(--color-text-primary)]">{appointment?.client?.name ?? "-"}</p>
               <Button
                 type="button"
                 variant="ghost"
@@ -178,26 +183,21 @@ export default function EditarAgendamentoPage() {
             </div>
           </div>
           <div>
-            <p className="text-xs mb-1" style={{ color: "#b0b0b0" }}>Servico</p>
-            <p style={{ color: "#eaeaea" }}>{appointment?.service?.name ?? "-"}</p>
+            <p className="mb-1 text-xs uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Serviço</p>
+            <p className="text-[var(--color-text-primary)]">{appointment?.service?.name ?? "-"}</p>
           </div>
         </div>
 
         <div>
-          <label htmlFor="startAt" className="block text-xs font-semibold mb-2" style={{ color: "#b0b0b0", letterSpacing: "1px" }}>
-            NOVO HORARIO
+          <label htmlFor="startAt" className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">
+            NOVO HORÁRIO
           </label>
           <input
             id="startAt"
             type="datetime-local"
             value={startAtInput}
             onChange={(event) => setStartAtInput(event.target.value)}
-            className="w-full rounded-lg border px-4 py-3 outline-none"
-            style={{
-              borderColor: "#2a2a2a",
-              background: "#121212",
-              color: "#eaeaea",
-            }}
+            className="w-full rounded-xl border border-[var(--color-border-soft)] bg-[var(--color-bg-dark)] px-4 py-3 text-[var(--color-text-primary)] outline-none transition-colors focus:border-[var(--color-accent)]"
           />
         </div>
 
