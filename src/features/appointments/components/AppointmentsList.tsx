@@ -180,7 +180,7 @@ export function AppointmentsList() {
                 </span>
               </div>
 
-              {/* Acoes do atendimento */}
+              {/* Ações do atendimento */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button
                   type="button"
