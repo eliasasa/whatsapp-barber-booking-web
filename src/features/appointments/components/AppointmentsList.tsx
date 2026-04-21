@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/toast";
 import { cancelAppointment } from "@/features/appointments/api/cancelAppointment";
 import { listAppointments } from "@/features/appointments/api/listAppointments";
 import type { Appointment } from "@/types/appointment";
 
 export function AppointmentsList() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +32,11 @@ export function AppointmentsList() {
       } catch {
         if (mounted) {
           setError("Não foi possível carregar os agendamentos.");
+          addToast({
+            title: "Falha ao carregar agenda",
+            description: "Verifique a conexão e tente novamente.",
+            type: "error",
+          });
         }
       } finally {
         if (mounted) {
@@ -66,8 +73,19 @@ export function AppointmentsList() {
             : appointment,
         ),
       );
+
+      addToast({
+        title: "Agendamento cancelado",
+        description: "O atendimento foi marcado como cancelado.",
+        type: "success",
+      });
     } catch {
       setActionError("Não foi possível cancelar o agendamento.");
+      addToast({
+        title: "Cancelamento não concluído",
+        description: "Tente novamente em instantes.",
+        type: "error",
+      });
     } finally {
       setCancelingId(null);
     }

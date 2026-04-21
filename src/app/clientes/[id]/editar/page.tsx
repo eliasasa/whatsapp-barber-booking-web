@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/toast";
 import { getClient, updateClient } from "@/features/clients";
 import type { Client } from "@/types/client";
 
@@ -13,6 +14,7 @@ type ClientRouteParams = {
 export default function EditarClientePage() {
   const params = useParams<ClientRouteParams>();
   const router = useRouter();
+  const { addToast } = useToast();
   const rawId = params.id;
   const clientId = Array.isArray(rawId) ? rawId[0] : rawId;
   const [clientData, setClientData] = useState<Client | null>(null);
@@ -36,10 +38,21 @@ export default function EditarClientePage() {
 
   function handleOpenWhatsApp() {
     if (!whatsappUrl) {
+      addToast({
+        title: "Telefone inválido",
+        description: "Não foi possível gerar o link do WhatsApp.",
+        type: "warning",
+      });
+
       return;
     }
 
     window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    addToast({
+      title: "WhatsApp aberto",
+      description: "A conversa foi iniciada com a mensagem pronta.",
+      type: "info",
+    });
   }
 
   useEffect(() => {
@@ -68,6 +81,11 @@ export default function EditarClientePage() {
       } catch {
         if (mounted) {
           setError("Não foi possível carregar os dados do cliente.");
+          addToast({
+            title: "Falha ao carregar cliente",
+            description: "Os dados não puderam ser carregados agora.",
+            type: "error",
+          });
         }
       } finally {
         if (mounted) {
@@ -142,11 +160,26 @@ export default function EditarClientePage() {
         setPhoneInput(updated.phone ?? "");
         setNotesInput(updated.notes ?? "");
         setSuccessMessage("Cliente atualizado com sucesso.");
+        addToast({
+          title: "Cliente atualizado",
+          description: "As alterações foram salvas com sucesso.",
+          type: "success",
+        });
       } catch (caughtError) {
         if (caughtError instanceof Error) {
           setError(caughtError.message);
+          addToast({
+            title: "Não foi possível salvar",
+            description: caughtError.message,
+            type: "error",
+          });
         } else {
           setError("Não foi possível atualizar o cliente.");
+          addToast({
+            title: "Não foi possível salvar",
+            description: "O cliente não pôde ser atualizado.",
+            type: "error",
+          });
         }
       } finally {
         setIsSaving(false);

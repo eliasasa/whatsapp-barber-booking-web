@@ -79,7 +79,7 @@ body::after {
     radial-gradient(circle at 54% 56%, rgba(250, 214, 138, 0.03) 0%, rgba(250, 214, 138, 0) 54%);
 }
 
-body > * {
+body > :not(#toast-portal) {
   position: relative;
   z-index: 1;
 }
@@ -153,6 +153,35 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   .reveal-up {
     animation: none;
+  }
+
+  .toast-item {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.toast-item {
+  will-change: transform, opacity;
+  transition:
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 280ms ease,
+    box-shadow 280ms ease;
+}
+
+.toast-hidden {
+  opacity: 0;
+  transform: translate3d(0, 120px, 0) scale(0.96);
+}
+
+.toast-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+@media (max-width: 639px) {
+  .toast-hidden {
+    transform: translate3d(0, 84px, 0) scale(0.965);
   }
 }
 
