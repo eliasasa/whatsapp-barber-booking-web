@@ -48,6 +48,7 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
 
   async function handleToggleBlock(client: Client) {
     const isBlocked = client.botDisabled ?? false;
+    const clientLabel = client.name?.trim() || client.phone?.trim() || "este cliente";
 
     try {
       setBlockingId(client.id);
@@ -66,8 +67,8 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
       addToast({
         title: isBlocked ? "Cliente desbloqueado" : "Cliente bloqueado",
         description: isBlocked
-          ? `${client.name} pode receber mensagens novamente.`
-          : `${client.name} não receberá mais mensagens do bot.`,
+          ? `${clientLabel} pode receber mensagens novamente.`
+          : `${clientLabel} não receberá mais mensagens do bot.`,
         type: "success",
       });
     } catch {

@@ -383,8 +383,9 @@ function BlockByPhoneCard() {
   const { addToast } = useToast();
   const [phone, setPhone] = useState("");
   const [isBlocking, setIsBlocking] = useState(false);
-  // Regexp: only digits, must be 55 + DDD(2 digits) + 9XXXXXXXX (9 digits)
-  const PHONE_REGEX = /^55\d{2}9\d{7}$/;
+  // Regexp: only digits, must be 55 + DDD(2 digits) + 8 digits (total 12 digits)
+  // Example: 55 67 84280151 -> 556784280151
+  const PHONE_REGEX = /^55\d{2}\d{8}$/;
 
   async function handleBlockByPhone() {
     const cleanPhone = phone.trim();
@@ -401,7 +402,7 @@ function BlockByPhoneCard() {
       addToast({
         title: "Formato inválido",
         description:
-          "Use apenas dígitos no formato: 55DDDNXXXXXXXX (ex.: 556784280151)",
+          "Use apenas dígitos no formato: 55 + DDD + número com 8 dígitos (ex.: 556784280151)",
         type: "error",
       });
       return;
@@ -411,9 +412,10 @@ function BlockByPhoneCard() {
       setIsBlocking(true);
       const client = await blockClientByPhone(cleanPhone);
       setPhone("");
+      const blockedLabel = client.name?.trim() || client.phone?.trim() || cleanPhone;
       addToast({
         title: "Cliente bloqueado",
-        description: `${client.name} foi bloqueado com sucesso.`,
+        description: `${blockedLabel} foi bloqueado com sucesso.`,
         type: "success",
       });
     } catch {
@@ -445,9 +447,9 @@ function BlockByPhoneCard() {
             placeholder="556784280151"
             className="w-full rounded-lg border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-disabled) focus:border-(--color-accent)"
             disabled={isBlocking}
-            aria-label="Telefone (apenas dígitos: 55DDDNXXXXXXXX)"
+            aria-label="Telefone (apenas dígitos: 55 + DDD + número de 8 dígitos)"
           />
-          <p className="mt-2 text-xs text-(--color-text-disabled)">Formato: apenas dígitos — ex.: 556784280151 (55 + DDD + número com 9 dígitos)</p>
+          <p className="mt-2 text-xs text-(--color-text-disabled)">Formato: apenas dígitos — ex.: 556784280151 (55 + DDD + número com 8 dígitos)</p>
         </div>
         <Button
           onClick={handleBlockByPhone}
