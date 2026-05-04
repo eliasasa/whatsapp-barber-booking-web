@@ -1,6 +1,4 @@
 import { AppointmentsList } from "@/features/appointments";
-import { Button } from "@/components/ui/Button";
-import { ToastTester } from "@/components/ui/toast/ToastTester";
 
 export default function Home() {
   const today = new Date().toLocaleDateString("pt-BR", {
@@ -34,31 +32,6 @@ export default function Home() {
             <span className="text-sm font-medium text-[var(--color-text-primary)]">{todayLabel}</span>
           </div>
         </div>
-      </section>
-
-      <section className="mt-8 reveal-up" style={{ animationDelay: "80ms" }}>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="section-title">Ações rápidas</h2>
-        </div>
-        <div className="surface-card flex flex-wrap items-center gap-3 p-4 sm:p-5">
-          <Button variant="solid" rightIcon={<span>→</span>}>
-            Confirmar
-          </Button>
-          <Button variant="outline">Reagendar</Button>
-          <Button variant="ghost">Mais detalhes</Button>
-          <Button variant="subtle">Ver histórico</Button>
-          <Button variant="danger">Cancelar</Button>
-        </div>
-      </section>
-
-      <section className="mt-8 reveal-up" style={{ animationDelay: "110ms" }}>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="section-title">Teste do toast</h2>
-          <p className="text-xs text-[var(--color-text-secondary)]">
-            Use esta área para validar cada variação.
-          </p>
-        </div>
-        <ToastTester />
       </section>
 
       <section className="mt-8 grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-3">

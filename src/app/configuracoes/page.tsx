@@ -10,10 +10,13 @@ import {
   setBotState,
   updateGreetingMessage,
 } from "@/features/bot/api";
+import { getBlockedClients, unblockClient } from "@/features/clients";
 
 type BotState = {
   paused: boolean;
 };
+
+import type { Client } from "@/types/client";
 
 function BotStatusCard() {
   const { addToast } = useToast();
@@ -279,6 +282,103 @@ function GreetingEditorCard() {
   );
 }
 
+function BlockedClientsCard() {
+  const { addToast } = useToast();
+  const [blockedClients, setBlockedClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadBlockedClients() {
+      try {
+        setIsLoading(true);
+        const data = await getBlockedClients();
+        setBlockedClients(data);
+      } catch {
+        addToast({
+          title: "Erro ao carregar clientes bloqueados",
+          description: "Não foi possível carregar a lista.",
+          type: "error",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void loadBlockedClients();
+  }, [addToast]);
+
+  async function handleUnblock(clientId: string, clientName: string) {
+    try {
+      setUnblockingId(clientId);
+      await unblockClient(clientId);
+      setBlockedClients((prev) => prev.filter((c) => c.id !== clientId));
+      addToast({
+        title: "Cliente desbloqueado",
+        description: `${clientName} foi removido da lista de bloqueados.`,
+        type: "success",
+      });
+    } catch {
+      addToast({
+        title: "Erro ao desbloquear",
+        description: "Tente novamente em instantes.",
+        type: "error",
+      });
+    } finally {
+      setUnblockingId(null);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) py-10">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-(--color-text-disabled) border-r-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) p-5 sm:p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">
+        Clientes bloqueados
+      </p>
+      <p className="mt-2 text-sm text-(--color-text-secondary)">
+        {blockedClients.length} cliente{blockedClients.length !== 1 ? "s" : ""} bloqueado{blockedClients.length !== 1 ? "s" : ""}
+      </p>
+
+      {blockedClients.length === 0 ? (
+        <div className="mt-6 py-10 text-center">
+          <p className="text-sm text-(--color-text-secondary)">Nenhum cliente bloqueado no momento.</p>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-2 border-t border-(--color-border-soft) pt-4">
+          {blockedClients.map((client) => (
+            <div
+              key={client.id}
+              className="flex items-center justify-between gap-3 rounded-lg bg-(--color-bg-soft) p-3"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-(--color-text-primary) truncate">{client.name}</p>
+                {client.phone && (
+                  <p className="text-xs text-(--color-text-secondary) truncate">{client.phone}</p>
+                )}
+              </div>
+              <Button
+                variant="subtle"
+                onClick={() => handleUnblock(client.id, client.name)}
+                disabled={unblockingId !== null}
+                isLoading={unblockingId === client.id}
+              >
+                Desbloquear
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ConfiguracoesPage() {
   return (
     <section className="container-shell pt-6 sm:pt-8">
@@ -297,6 +397,10 @@ export default function ConfiguracoesPage() {
 
         <div className="reveal-up" style={{ animationDelay: "80ms" }}>
           <GreetingEditorCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "120ms" }}>
+          <BlockedClientsCard />
         </div>
       </div>
     </section>
