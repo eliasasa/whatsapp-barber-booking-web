@@ -383,6 +383,8 @@ function BlockByPhoneCard() {
   const { addToast } = useToast();
   const [phone, setPhone] = useState("");
   const [isBlocking, setIsBlocking] = useState(false);
+  // Regexp: only digits, must be 55 + DDD(2 digits) + 9XXXXXXXX (9 digits)
+  const PHONE_REGEX = /^55\d{2}9\d{7}$/;
 
   async function handleBlockByPhone() {
     const cleanPhone = phone.trim();
@@ -390,6 +392,16 @@ function BlockByPhoneCard() {
       addToast({
         title: "Telefone inválido",
         description: "Digite um telefone para bloquear.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (!/^[0-9]+$/.test(cleanPhone) || !PHONE_REGEX.test(cleanPhone)) {
+      addToast({
+        title: "Formato inválido",
+        description:
+          "Use apenas dígitos no formato: 55DDDNXXXXXXXX (ex.: 556784280151)",
         type: "error",
       });
       return;
@@ -430,10 +442,12 @@ function BlockByPhoneCard() {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="Ex: +55 11 98765-4321"
+            placeholder="556784280151"
             className="w-full rounded-lg border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-disabled) focus:border-(--color-accent)"
             disabled={isBlocking}
+            aria-label="Telefone (apenas dígitos: 55DDDNXXXXXXXX)"
           />
+          <p className="mt-2 text-xs text-(--color-text-disabled)">Formato: apenas dígitos — ex.: 556784280151 (55 + DDD + número com 9 dígitos)</p>
         </div>
         <Button
           onClick={handleBlockByPhone}
