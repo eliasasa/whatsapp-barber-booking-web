@@ -50,7 +50,7 @@ export function AppointmentsList() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [addToast]);
 
   async function handleCancel(id: string) {
     if (!window.confirm("Deseja realmente cancelar este agendamento?")) {
