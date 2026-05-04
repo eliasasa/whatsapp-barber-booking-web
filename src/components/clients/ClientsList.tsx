@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Client } from "../../types/client";
 import { Button } from "../ui/Button";
 import { useToast } from "../ui/toast";
-import { blockClient, unblockClient } from "@/features/clients";
+import { blockClient, unblockClient, deleteClient } from "@/features/clients";
 
 type ClientsListProps = {
   initialClients: Client[];
@@ -32,6 +32,7 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [search, setSearch] = useState("");
   const [blockingId, setBlockingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const q = search.trim().toLowerCase();
   const filtered = useMemo(
@@ -82,6 +83,22 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
     }
   }
 
+  async function handleDelete(client: Client) {
+    const ok = window.confirm(`Excluir ${client.name || client.phone || 'este cliente'}? Esta ação é irreversível.`);
+    if (!ok) return;
+
+    try {
+      setDeletingId(client.id);
+      await deleteClient(client.id);
+      setClients((prev) => prev.filter((c) => c.id !== client.id));
+      addToast({ title: "Cliente excluído", description: `${client.name || client.phone || 'Cliente'} removido.`, type: "success" });
+    } catch {
+      addToast({ title: "Erro ao excluir", description: "Tente novamente em instantes.", type: "error" });
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className="mt-6">
       <div className="flex flex-col gap-3 rounded-3xl border border-(--color-border-soft) bg-(--color-bg-card)/80 p-4 shadow-[0_18px_40px_rgba(7,9,14,0.18)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
@@ -128,7 +145,7 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
                 )}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -146,6 +163,16 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
                   className="flex-1"
                 >
                   {isBlocked ? "Desbloquear" : "Bloquear"}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => handleDelete(client)}
+                  disabled={deletingId !== null || blockingId !== null}
+                  isLoading={deletingId === client.id}
+                  className="flex-1"
+                >
+                  Excluir
                 </Button>
               </div>
             </div>
