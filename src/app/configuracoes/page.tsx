@@ -10,7 +10,7 @@ import {
   setBotState,
   updateGreetingMessage,
 } from "@/features/bot/api";
-import { getBlockedClients, unblockClient } from "@/features/clients";
+import { getBlockedClients, unblockClient, blockClientByPhone } from "@/features/clients";
 
 type BotState = {
   paused: boolean;
@@ -379,6 +379,74 @@ function BlockedClientsCard() {
   );
 }
 
+function BlockByPhoneCard() {
+  const { addToast } = useToast();
+  const [phone, setPhone] = useState("");
+  const [isBlocking, setIsBlocking] = useState(false);
+
+  async function handleBlockByPhone() {
+    const cleanPhone = phone.trim();
+    if (!cleanPhone) {
+      addToast({
+        title: "Telefone inválido",
+        description: "Digite um telefone para bloquear.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setIsBlocking(true);
+      const client = await blockClientByPhone(cleanPhone);
+      setPhone("");
+      addToast({
+        title: "Cliente bloqueado",
+        description: `${client.name} foi bloqueado com sucesso.`,
+        type: "success",
+      });
+    } catch {
+      addToast({
+        title: "Erro ao bloquear cliente",
+        description: "Cliente não encontrado ou erro ao processar. Verifique o telefone.",
+        type: "error",
+      });
+    } finally {
+      setIsBlocking(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) p-5 sm:p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">
+        Bloquear cliente
+      </p>
+      <p className="mt-2 text-sm text-(--color-text-secondary)">
+        Bloqueie um cliente informando seu número de telefone.
+      </p>
+
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3">
+        <div className="flex-1">
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Ex: +55 11 98765-4321"
+            className="w-full rounded-lg border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-disabled) focus:border-(--color-accent)"
+            disabled={isBlocking}
+          />
+        </div>
+        <Button
+          onClick={handleBlockByPhone}
+          disabled={!phone.trim() || isBlocking}
+          isLoading={isBlocking}
+        >
+          Bloquear
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function ConfiguracoesPage() {
   return (
     <section className="container-shell pt-6 sm:pt-8">
@@ -401,6 +469,10 @@ export default function ConfiguracoesPage() {
 
         <div className="reveal-up" style={{ animationDelay: "120ms" }}>
           <BlockedClientsCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "160ms" }}>
+          <BlockByPhoneCard />
         </div>
       </div>
     </section>

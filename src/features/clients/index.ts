@@ -4,3 +4,4 @@ export { listClients } from "./api/listClients";
 export { blockClient } from "./api/blockClient";
 export { unblockClient } from "./api/unblockClient";
 export { getBlockedClients } from "./api/getBlockedClients";
+export { blockClientByPhone } from "./api/blockClientByPhone";

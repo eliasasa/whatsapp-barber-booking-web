@@ -4,6 +4,8 @@ import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Client } from "../../types/client";
 import { Button } from "../ui/Button";
+import { useToast } from "../ui/toast";
+import { blockClient, unblockClient } from "@/features/clients";
 
 type ClientsListProps = {
   initialClients: Client[];
@@ -26,8 +28,10 @@ function Initials({ name }: { name?: string }) {
 
 export default function ClientsList({ initialClients }: ClientsListProps) {
   const router = useRouter();
-  const [clients] = useState<Client[]>(initialClients);
+  const { addToast } = useToast();
+  const [clients, setClients] = useState<Client[]>(initialClients);
   const [search, setSearch] = useState("");
+  const [blockingId, setBlockingId] = useState<string | null>(null);
 
   const q = search.trim().toLowerCase();
   const filtered = useMemo(
@@ -41,6 +45,41 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
       }),
     [clients, q]
   );
+
+  async function handleToggleBlock(client: Client) {
+    const isBlocked = client.botDisabled ?? false;
+
+    try {
+      setBlockingId(client.id);
+      if (isBlocked) {
+        await unblockClient(client.id);
+      } else {
+        await blockClient(client.id);
+      }
+
+      setClients((prev) =>
+        prev.map((c) =>
+          c.id === client.id ? { ...c, botDisabled: !isBlocked } : c
+        )
+      );
+
+      addToast({
+        title: isBlocked ? "Cliente desbloqueado" : "Cliente bloqueado",
+        description: isBlocked
+          ? `${client.name} pode receber mensagens novamente.`
+          : `${client.name} não receberá mais mensagens do bot.`,
+        type: "success",
+      });
+    } catch {
+      addToast({
+        title: "Erro ao atualizar bloqueio",
+        description: "Tente novamente em instantes.",
+        type: "error",
+      });
+    } finally {
+      setBlockingId(null);
+    }
+  }
 
   return (
     <div className="mt-6">
@@ -71,23 +110,46 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
       </div>
 
       <div className="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-        {filtered.map((client) => (
-          <div key={client.id} className="surface-card p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Initials name={client.name} />
-              <div>
-                <div className="font-semibold">{client.name}</div>
-                <div className="text-sm text-[var(--color-text-secondary)]">{client.phone || '—'}</div>
+        {filtered.map((client) => {
+          const isBlocked = client.botDisabled ?? false;
+          return (
+            <div key={client.id} className="surface-card p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <Initials name={client.name} />
+                <div className="flex-1">
+                  <div className="font-semibold">{client.name}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">{client.phone || '—'}</div>
+                </div>
+                {isBlocked && (
+                  <span className="inline-flex items-center rounded-full bg-[var(--color-status-busy)]/15 px-2 py-1 text-xs font-semibold text-[var(--color-status-busy)]">
+                    Bloqueado
+                  </span>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push(`/clientes/${client.id}/editar`)}
+                  className="flex-1"
+                >
+                  Editar
+                </Button>
+                <Button
+                  variant={isBlocked ? "outline" : "subtle"}
+                  size="sm"
+                  onClick={() => handleToggleBlock(client)}
+                  disabled={blockingId !== null}
+                  isLoading={blockingId === client.id}
+                  className="flex-1"
+                >
+                  {isBlocked ? "Desbloquear" : "Bloquear"}
+                </Button>
               </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => router.push(`/clientes/${client.id}/editar`)}>
-                Editar
-              </Button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {filtered.length === 0 && (
           <div className="col-span-full p-6 rounded-xl border border-dashed border-[var(--color-border-soft)] text-center text-[var(--color-text-secondary)]">
