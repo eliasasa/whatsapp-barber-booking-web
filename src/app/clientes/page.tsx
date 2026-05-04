@@ -1,3 +1,5 @@
+import ClientsList from "../../components/clients/ClientsList";
+
 export default function ClientesPage() {
   return (
     <section className="container-shell pt-6 sm:pt-8">
@@ -19,6 +21,8 @@ export default function ClientesPage() {
           <p className="mt-2 text-3xl font-semibold text-[var(--color-text-primary)]">0%</p>
         </article>
       </div>
+
+      <ClientsList />
     </section>
   );
 }
