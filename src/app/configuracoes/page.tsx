@@ -1,3 +1,7 @@
+"use client";
+
+import { BotGreetingSettings } from "@/components/bot/BotGreetingSettings";
+
 export default function ConfiguracoesPage() {
   return (
     <section className="container-shell pt-6 sm:pt-8">
@@ -9,14 +13,12 @@ export default function ConfiguracoesPage() {
         </p>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <article className="surface-card reveal-up p-5" style={{ animationDelay: "80ms" }}>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Sistema</p>
-          <p className="mt-3 text-sm text-[var(--color-text-secondary)]">Timezone, idioma e dados da barbearia.</p>
-        </article>
-        <article className="surface-card reveal-up p-5" style={{ animationDelay: "120ms" }}>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Comunicação</p>
-          <p className="mt-3 text-sm text-[var(--color-text-secondary)]">Mensagens automáticas e confirmação por WhatsApp.</p>
+      <div className="mt-6 grid grid-cols-1 gap-6">
+        {/* Bot Settings */}
+        <article className="surface-card reveal-up p-6 sm:p-8" style={{ animationDelay: "80ms" }}>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Bot & Automação</p>
+          <p className="mt-2 mb-6 text-sm text-[var(--color-text-secondary)]">Mensagens e comportamento do bot WhatsApp.</p>
+          <BotGreetingSettings />
         </article>
       </div>
     </section>
