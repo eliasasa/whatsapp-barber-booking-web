@@ -84,8 +84,8 @@ export function BotGreetingSettings() {
   if (error) {
     return (
       <div
-        className="p-4 rounded-lg border"
-        style={{ borderColor: "var(--color-error)", background: "rgba(230, 57, 70, 0.1)" }}
+        className="rounded-xl border p-4"
+        style={{ borderColor: "var(--color-error)", background: "rgba(230, 57, 70, 0.08)" }}
       >
         <p className="text-sm" style={{ color: "var(--color-error)" }}>
           {error}
@@ -95,27 +95,41 @@ export function BotGreetingSettings() {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
-          Mensagem de Greeting
-        </label>
+    <div className="space-y-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <label className="block text-sm font-semibold text-[var(--color-text-primary)]">
+            Mensagem de boas-vindas
+          </label>
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+            Texto enviado quando um cliente inicia contato com o bot.
+          </p>
+        </div>
+
+        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-soft)] px-3 py-1 text-xs font-semibold text-[var(--color-text-secondary)]">
+          {content.length} caracteres
+        </span>
+      </div>
+
+      <div className="space-y-2">
         <textarea
           value={content}
           onChange={(e) => handleChange(e.target.value)}
-          placeholder="Defina a mensagem que será enviada quando um cliente novo contatar..."
-          className="w-full px-4 py-3 rounded-lg border-2 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)]"
+          placeholder={content || "Digite a mensagem que será enviada quando um cliente novo contatar..."}
+          className="min-h-[180px] w-full resize-y rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-soft)] px-4 py-4 text-[var(--color-text-primary)] outline-none transition duration-200 placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:shadow-[0_0_0_3px_rgba(205,163,79,0.08)]"
           style={{
-            borderColor: "var(--color-border)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)",
           }}
           rows={6}
         />
-        <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
-          {content.length} caracteres
-        </p>
       </div>
 
-      <div className="flex gap-3 justify-end">
+      <div className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-[var(--color-text-tertiary)]">
+          Ajuste esse texto para refletir o tom da sua barbearia.
+        </p>
+
+        <div className="flex gap-3 justify-end">
         <Button
           variant="outline"
           onClick={() => {
@@ -129,6 +143,7 @@ export function BotGreetingSettings() {
         <Button onClick={handleSave} disabled={!hasChanges || isSaving} isLoading={isSaving}>
           Salvar Mudanças
         </Button>
+        </div>
       </div>
     </div>
   );
