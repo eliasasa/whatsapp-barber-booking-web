@@ -29,6 +29,7 @@ export default function Navbar() {
                         width={150}
                         height={50}
                         alt="Logo"
+                        loading="eager"
                         className="h-full w-28 object-contain md:w-32"
                     />
 
