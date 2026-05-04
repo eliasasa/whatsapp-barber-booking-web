@@ -1,6 +1,9 @@
 import ClientsList from "../../components/clients/ClientsList";
+import { listClients } from "../../features/clients/api/listClients";
 
-export default function ClientesPage() {
+export default async function ClientesPage() {
+  const clients = await listClients().catch(() => []);
+
   return (
     <section className="container-shell pt-6 sm:pt-8">
       <div className="surface-panel reveal-up px-6 py-7 sm:px-8 sm:py-8">
@@ -11,18 +14,7 @@ export default function ClientesPage() {
         </p>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <article className="surface-card reveal-up p-5" style={{ animationDelay: "80ms" }}>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Base ativa</p>
-          <p className="mt-2 text-3xl font-semibold text-[var(--color-text-primary)]">0</p>
-        </article>
-        <article className="surface-card reveal-up p-5" style={{ animationDelay: "120ms" }}>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Retenção</p>
-          <p className="mt-2 text-3xl font-semibold text-[var(--color-text-primary)]">0%</p>
-        </article>
-      </div>
-
-      <ClientsList />
+      <ClientsList initialClients={clients} />
     </section>
   );
 }
