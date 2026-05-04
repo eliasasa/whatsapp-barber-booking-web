@@ -99,7 +99,7 @@ export default function EditarClientePage() {
     return () => {
             mounted = false;
     };
-    }, [clientId]);
+    }, [clientId, addToast]);
 
     if (!clientId) {
     return (
