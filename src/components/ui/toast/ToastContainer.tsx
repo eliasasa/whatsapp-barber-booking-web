@@ -14,10 +14,18 @@ export function ToastContainer({messages, removeToast}: ToastContainerProps) {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
-        setIsMounted(true);
+        const frame = requestAnimationFrame(() => {
+            setIsMounted(true);
+        });
+
+        return () => cancelAnimationFrame(frame);
     }, []);
 
     if (!isMounted) {
+        return null;
+    }
+
+    if (typeof document === "undefined") {
         return null;
     }
 

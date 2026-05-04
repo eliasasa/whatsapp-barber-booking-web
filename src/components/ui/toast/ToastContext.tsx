@@ -22,7 +22,6 @@ interface ToastProviderProps {
 }
 
 const ToastContext = createContext<ToastContextData | null>(null);
-const TOAST_DURATION = 5000;
 
 function createToastId() {
     if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -46,7 +45,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
         setMessages((prev) => [toast, ...prev]);
 
         return id;
-    }, [removeToast]);
+    }, []);
 
     const value = useMemo(
         () => ({ addToast, removeToast }),
