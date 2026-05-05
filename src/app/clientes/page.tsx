@@ -2,7 +2,14 @@ import ClientsList from "../../components/clients/ClientsList";
 import { listClients } from "../../features/clients/api/listClients";
 
 export default async function ClientesPage() {
-  const clients = await listClients().catch(() => []);
+  let clients = [];
+  let errorMessage: string | null = null;
+
+  try {
+    clients = await listClients();
+  } catch {
+    errorMessage = "Não foi possível carregar os clientes agora.";
+  }
 
   return (
     <section className="container-shell pt-6 sm:pt-8">
@@ -14,7 +21,13 @@ export default async function ClientesPage() {
         </p>
       </div>
 
-      <ClientsList initialClients={clients} />
+      {errorMessage ? (
+        <div className="mt-6 rounded-2xl border border-[rgba(216,81,81,0.35)] bg-[rgba(216,81,81,0.08)] p-5 text-sm text-(--color-status-busy)">
+          {errorMessage}
+        </div>
+      ) : (
+        <ClientsList initialClients={clients} />
+      )}
     </section>
   );
 }

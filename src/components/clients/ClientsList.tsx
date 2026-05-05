@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Client } from "../../types/client";
 import { Button } from "../ui/Button";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/toast";
 import { blockClient, unblockClient, deleteClient } from "@/features/clients";
 
@@ -33,6 +34,7 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
   const [search, setSearch] = useState("");
   const [blockingId, setBlockingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDeleteClient, setPendingDeleteClient] = useState<Client | null>(null);
 
   const q = search.trim().toLowerCase();
   const filtered = useMemo(
@@ -84,8 +86,13 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
   }
 
   async function handleDelete(client: Client) {
-    const ok = window.confirm(`Excluir ${client.name || client.phone || 'este cliente'}? Esta ação é irreversível.`);
-    if (!ok) return;
+    setPendingDeleteClient(client);
+  }
+
+  async function confirmDeleteClient() {
+    if (!pendingDeleteClient) return;
+
+    const client = pendingDeleteClient;
 
     try {
       setDeletingId(client.id);
@@ -96,11 +103,23 @@ export default function ClientsList({ initialClients }: ClientsListProps) {
       addToast({ title: "Erro ao excluir", description: "Tente novamente em instantes.", type: "error" });
     } finally {
       setDeletingId(null);
+      setPendingDeleteClient(null);
     }
   }
 
   return (
     <div className="mt-6">
+      <ConfirmDialog
+        open={pendingDeleteClient !== null}
+        title="Excluir cliente?"
+        description={`Tem certeza que deseja excluir ${pendingDeleteClient?.name || pendingDeleteClient?.phone || "este cliente"}? Esta ação não pode ser desfeita.`}
+        confirmText="Sim, excluir"
+        cancelText="Não, manter"
+        confirmVariant="danger"
+        isLoading={deletingId !== null}
+        onConfirm={() => void confirmDeleteClient()}
+        onCancel={() => setPendingDeleteClient(null)}
+      />
       <div className="flex flex-col gap-3 rounded-3xl border border-(--color-border-soft) bg-(--color-bg-card)/80 p-4 shadow-[0_18px_40px_rgba(7,9,14,0.18)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div className="relative w-full sm:max-w-xl">
           <svg className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-(--color-text-secondary)" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
