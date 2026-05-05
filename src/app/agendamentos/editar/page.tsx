@@ -4,21 +4,42 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/toast";
 import { getAppointment } from "@/features/appointments/api/getAppointment";
 import { rescheduleAppointment } from "@/features/appointments/api/rescheduleAppointment";
 import type { Appointment } from "@/types/appointment";
 
+function parseApiError(error: unknown): string {
+  if (error instanceof Error) {
+    const message = error.message;
+    const match = message.match(/API error \(\d+\): (.+)$/);
+    
+    if (match) {
+      const body = match[1];
+      try {
+        const parsed = JSON.parse(body);
+        return parsed.error || parsed.message || body;
+      } catch {
+        return body;
+      }
+    }
+    
+    return message;
+  }
+  
+  return "Erro ao processar a solicitação.";
+}
+
 export default function EditarAgendamentoPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { addToast } = useToast();
   const id = searchParams.get("id");
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [startAtInput, setStartAtInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   function handleEditClient(clientId: string) {
     router.push(`/clientes/${encodeURIComponent(clientId)}/editar`);
@@ -46,7 +67,11 @@ export default function EditarAgendamentoPage() {
     async function loadAppointment() {
       if (!id) {
         if (mounted) {
-          setError("ID do agendamento não informado na URL.");
+          addToast({
+            title: "ID não informado",
+            description: "ID do agendamento não encontrado na URL.",
+            type: "error",
+          });
           setIsLoading(false);
         }
         return;
@@ -54,7 +79,6 @@ export default function EditarAgendamentoPage() {
 
       try {
         setIsLoading(true);
-        setError(null);
 
         const data = await getAppointment(id);
 
@@ -64,7 +88,11 @@ export default function EditarAgendamentoPage() {
         }
       } catch {
         if (mounted) {
-          setError("Não foi possível carregar os dados do agendamento.");
+          addToast({
+            title: "Erro ao carregar",
+            description: "Não foi possível carregar os dados do agendamento.",
+            type: "error",
+          });
         }
       } finally {
         if (mounted) {
@@ -78,38 +106,49 @@ export default function EditarAgendamentoPage() {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [id, addToast]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!id) {
-      setError("ID do agendamento não informado na URL.");
+      addToast({
+        title: "ID não informado",
+        description: "ID do agendamento não encontrado na URL.",
+        type: "error",
+      });
       return;
     }
 
     if (!startAtInput) {
-      setError("Informe a nova data e horário para reagendar.");
+      addToast({
+        title: "Data e horário obrigatórios",
+        description: "Informe a nova data e horário para reagendar.",
+        type: "warning",
+      });
       return;
     }
 
     try {
       setIsSaving(true);
-      setError(null);
-      setSuccessMessage(null);
 
       const isoStartAt = new Date(startAtInput).toISOString();
       const updated = await rescheduleAppointment(id, { newStartAt: isoStartAt });
 
       setAppointment(updated);
       setStartAtInput(toDatetimeLocalValue(updated.startAt));
-      setSuccessMessage("Agendamento reagendado com sucesso.");
+      
+      addToast({
+        title: "Agendamento reagendado",
+        description: "O horário foi atualizado com sucesso.",
+        type: "success",
+      });
     } catch (caughtError) {
-      if (caughtError instanceof Error) {
-        setError(caughtError.message);
-      } else {
-        setError("Não foi possível reagendar o atendimento.");
-      }
+      addToast({
+        title: "Erro ao reagendar",
+        description: parseApiError(caughtError),
+        type: "error",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -125,16 +164,6 @@ export default function EditarAgendamentoPage() {
     );
   }
 
-  if (error) {
-    return (
-      <section className="container-shell pt-6 sm:pt-8">
-        <div className="surface-panel border-[var(--color-status-busy)] p-6 sm:p-8">
-          <p className="text-[var(--color-status-busy)]">{error}</p>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section className="container-shell pt-6 sm:pt-8">
       <div className="surface-panel reveal-up px-6 py-7 sm:px-8 sm:py-8">
@@ -144,18 +173,6 @@ export default function EditarAgendamentoPage() {
           Atualize o horário e confirme para reagendar no sistema.
         </p>
       </div>
-
-      {error && (
-        <div className="mb-4 mt-6 rounded-xl border border-[var(--color-status-busy)] bg-[rgba(216,81,81,0.12)] p-4 text-[var(--color-status-busy)]">
-          {error}
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="mb-4 mt-6 rounded-xl border border-[var(--color-status-available)] bg-[rgba(49,197,119,0.12)] p-4 text-[var(--color-status-available)]">
-          {successMessage}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="surface-panel mt-6 space-y-6 p-6 sm:p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

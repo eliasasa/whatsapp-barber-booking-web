@@ -23,8 +23,6 @@ export default function EditarClientePage() {
   const [notesInput, setNotesInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   function normalizePhone(value?: string | null) {
     return (value ?? "").replace(/\D/g, "");
@@ -68,7 +66,6 @@ export default function EditarClientePage() {
     async function loadClient(currentClientId: string) {
       try {
         setIsLoading(true);
-        setError(null);
 
         const data = await getClient(currentClientId);
 
@@ -80,7 +77,6 @@ export default function EditarClientePage() {
         }
       } catch {
         if (mounted) {
-          setError("Não foi possível carregar os dados do cliente.");
           addToast({
             title: "Falha ao carregar cliente",
             description: "Os dados não puderam ser carregados agora.",
@@ -101,16 +97,6 @@ export default function EditarClientePage() {
     };
     }, [clientId, addToast]);
 
-    if (!clientId) {
-    return (
-            <section className="container-shell pt-6 sm:pt-8">
-        <div className="surface-panel border-(--color-status-busy) p-6 sm:p-8">
-                    <p className="text-(--color-status-busy)">ID do cliente não informado na URL.</p>
-        </div>
-            </section>
-    );
-    }
-
     if (isLoading) {
     return (
             <section className="container-shell pt-6 sm:pt-8">
@@ -121,33 +107,29 @@ export default function EditarClientePage() {
     );
     }
 
-    if (error) {
-    return (
-            <section className="container-shell pt-6 sm:pt-8">
-                <div className="surface-panel border-(--color-status-busy) p-6 sm:p-8">
-                    <p className="text-(--color-status-busy)">{error}</p>
-                </div>
-            </section>
-    );
-    }
-
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
       event.preventDefault();
 
       if (!clientId) {
-        setError("ID do cliente não informado na URL.");
+        addToast({
+          title: "ID não informado",
+          description: "ID do cliente não foi encontrado na URL.",
+          type: "error",
+        });
         return;
       }
 
       if (!nameInput.trim()) {
-        setError("Informe o nome do cliente.");
+        addToast({
+          title: "Nome obrigatório",
+          description: "Informe o nome do cliente.",
+          type: "warning",
+        });
         return;
       }
 
       try {
         setIsSaving(true);
-        setError(null);
-        setSuccessMessage(null);
 
         const updated = await updateClient(clientId, {
           name: nameInput.trim(),
@@ -159,28 +141,17 @@ export default function EditarClientePage() {
         setNameInput(updated.name ?? "");
         setPhoneInput(updated.phone ?? "");
         setNotesInput(updated.notes ?? "");
-        setSuccessMessage("Cliente atualizado com sucesso.");
         addToast({
           title: "Cliente atualizado",
           description: "As alterações foram salvas com sucesso.",
           type: "success",
         });
       } catch (caughtError) {
-        if (caughtError instanceof Error) {
-          setError(caughtError.message);
-          addToast({
-            title: "Não foi possível salvar",
-            description: caughtError.message,
-            type: "error",
-          });
-        } else {
-          setError("Não foi possível atualizar o cliente.");
-          addToast({
-            title: "Não foi possível salvar",
-            description: "O cliente não pôde ser atualizado.",
-            type: "error",
-          });
-        }
+        addToast({
+          title: "Não foi possível salvar",
+          description: caughtError instanceof Error ? caughtError.message : "O cliente não pôde ser atualizado.",
+          type: "error",
+        });
       } finally {
         setIsSaving(false);
       }
@@ -242,18 +213,6 @@ export default function EditarClientePage() {
                     </div>
                 </article>
             </div>
-
-            {error && (
-              <div className="mt-6 rounded-xl border border-(--color-status-busy) bg-[rgba(216,81,81,0.12)] p-4 text-(--color-status-busy)">
-                {error}
-              </div>
-            )}
-
-            {successMessage && (
-              <div className="mt-6 rounded-xl border border-(--color-status-available) bg-[rgba(49,197,119,0.12)] p-4 text-(--color-status-available)">
-                {successMessage}
-              </div>
-            )}
 
             <form onSubmit={handleSubmit} className="surface-panel mt-6 p-5 sm:p-6">
               <p className="mb-4 text-sm text-(--color-text-secondary)">
