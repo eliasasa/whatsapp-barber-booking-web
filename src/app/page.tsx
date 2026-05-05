@@ -1,13 +1,80 @@
-import { AppointmentsList } from "@/features/appointments";
+import { AppointmentsList, listAppointments } from "@/features/appointments";
+import type { Appointment } from "@/types/appointment";
 
-export default function Home() {
-  const today = new Date().toLocaleDateString("pt-BR", {
+const BRAZIL_TIME_ZONE = "America/Sao_Paulo";
+
+function getBrazilDateKey(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BRAZIL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "00";
+  const day = parts.find((part) => part.type === "day")?.value ?? "00";
+
+  return `${year}-${month}-${day}`;
+}
+
+function getAppointmentLabel(appointment: Appointment) {
+  return appointment.client?.name?.trim() || appointment.service?.name?.trim() || "Atendimento";
+}
+
+function getFormattedTime(date: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: BRAZIL_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+export default async function Home() {
+  const today = new Date();
+  const todayLabel = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: BRAZIL_TIME_ZONE,
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+  }).format(today);
+
+  let appointments: Appointment[] = [];
+
+  try {
+    appointments = await listAppointments();
+  } catch {
+    appointments = [];
+  }
+
+  const nowTime = today.getTime();
+  const todayKey = getBrazilDateKey(today);
+
+  const confirmedAppointments = appointments.filter((appointment) => appointment.status !== "CANCELED");
+  const upcomingAppointments = confirmedAppointments
+    .map((appointment) => ({ appointment, startTime: new Date(appointment.startAt).getTime() }))
+    .filter(({ startTime }) => Number.isFinite(startTime) && startTime >= nowTime)
+    .sort((a, b) => a.startTime - b.startTime);
+
+  const nextAppointment = upcomingAppointments[0]?.appointment ?? null;
+  const todayAppointments = confirmedAppointments.filter(
+    (appointment) => getBrazilDateKey(new Date(appointment.startAt)) === todayKey,
+  );
+  const nextSevenDays = confirmedAppointments.filter((appointment) => {
+    const startTime = new Date(appointment.startAt).getTime();
+    const diff = startTime - nowTime;
+    return Number.isFinite(startTime) && diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000;
   });
-  const todayLabel = today.charAt(0).toUpperCase() + today.slice(1);
+
+  const nextAppointmentTime = nextAppointment ? getFormattedTime(new Date(nextAppointment.startAt)) : null;
+  const nextAppointmentDate = nextAppointment
+    ? new Intl.DateTimeFormat("pt-BR", {
+        timeZone: BRAZIL_TIME_ZONE,
+        day: "2-digit",
+        month: "short",
+      }).format(new Date(nextAppointment.startAt))
+    : null;
 
   return (
     <div className="container-shell pt-6 sm:pt-8">
@@ -19,7 +86,7 @@ export default function Home() {
               Agenda da barbearia
             </h1>
             <p className="mt-3 max-w-xl text-sm text-[var(--color-text-secondary)] sm:text-base">
-              Controle os atendimentos do dia com uma interface mais clara, elegante e pronta para alta rotação.
+              Hoje a operação está concentrada nos horários já confirmados, com o próximo atendimento e os próximos dias visíveis em um só lugar.
             </p>
           </div>
 
@@ -39,22 +106,37 @@ export default function Home() {
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">
             Próximo horário
           </p>
-          <p className="mt-3 text-5xl font-semibold text-[var(--color-accent)] [font-variant-numeric:tabular-nums]">
-            --:--
-          </p>
-          <p className="mt-3 text-sm text-[var(--color-text-disabled)]">
-            Sem agendamentos pendentes no momento.
-          </p>
+          {nextAppointment ? (
+            <>
+              <p className="mt-3 text-5xl font-semibold text-[var(--color-accent)] [font-variant-numeric:tabular-nums]">
+                {nextAppointmentTime}
+              </p>
+              <p className="mt-3 text-sm text-[var(--color-text-secondary)]">
+                {getAppointmentLabel(nextAppointment)} · {nextAppointmentDate}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-3 text-3xl font-semibold text-[var(--color-text-primary)]">
+                Nenhum horário próximo
+              </p>
+              <p className="mt-3 text-sm text-[var(--color-text-disabled)]">
+                Assim que houver novos agendamentos confirmados, eles vão aparecer aqui.
+              </p>
+            </>
+          )}
         </div>
 
         <div className="space-y-4">
           <div className="surface-card reveal-up p-5" style={{ animationDelay: "190ms" }}>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Hoje</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--color-text-primary)]">0</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--color-text-primary)]">{todayAppointments.length}</p>
+            <p className="mt-2 text-xs text-[var(--color-text-disabled)]">agendamentos confirmados</p>
           </div>
           <div className="surface-card reveal-up p-5" style={{ animationDelay: "230ms" }}>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Capacidade</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--color-text-primary)]">0%</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Próximos 7 dias</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--color-text-primary)]">{nextSevenDays.length}</p>
+            <p className="mt-2 text-xs text-[var(--color-text-disabled)]">agendamentos futuros confirmados</p>
           </div>
         </div>
       </section>
