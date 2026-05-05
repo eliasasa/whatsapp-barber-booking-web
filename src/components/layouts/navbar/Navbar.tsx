@@ -46,9 +46,11 @@ export default function Navbar() {
                 </ul>
 
                 <div className="hidden md:block">
-                    <Button size="sm" rightIcon={<span>{">"}</span>}>
-                        Novo agendamento
-                    </Button>
+                    <Link href="/agendamentos/novo">
+                        <Button size="sm" rightIcon={<span>{">"}</span>}>
+                            Novo agendamento
+                        </Button>
+                    </Link>
                 </div>
 
                 <button
@@ -104,9 +106,11 @@ export default function Navbar() {
                     </ul>
 
                     <div className="mt-3">
-                        <Button fullWidth rightIcon={<span>{">"}</span>} onClick={() => setIsOpen(false)}>
-                            Novo agendamento
-                        </Button>
+                        <Link href="/agendamentos/novo" className="block">
+                            <Button fullWidth rightIcon={<span>{">"}</span>} onClick={() => setIsOpen(false)}>
+                                Novo agendamento
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </div>

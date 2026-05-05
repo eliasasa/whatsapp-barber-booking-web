@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
 import { deleteService, listServices, pauseService } from "@/features/services";
 import type { Service } from "@/types/service";
@@ -23,6 +24,7 @@ export default function ServicesList() {
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isMutatingId, setIsMutatingId] = useState<string | null>(null);
+  const [pendingDeleteService, setPendingDeleteService] = useState<Service | null>(null);
 
   const loadServices = useCallback(async () => {
     try {
@@ -86,11 +88,13 @@ export default function ServicesList() {
   }
 
   async function handleDelete(service: Service) {
-    const confirmed = window.confirm(`Apagar o serviço "${service.name}"?`);
+    setPendingDeleteService(service);
+  }
 
-    if (!confirmed) {
-      return;
-    }
+  async function confirmDeleteService() {
+    if (!pendingDeleteService) return;
+
+    const service = pendingDeleteService;
 
     try {
       setIsMutatingId(service.id);
@@ -109,11 +113,23 @@ export default function ServicesList() {
       });
     } finally {
       setIsMutatingId(null);
+      setPendingDeleteService(null);
     }
   }
 
   return (
     <div className="mt-6">
+      <ConfirmDialog
+        open={pendingDeleteService !== null}
+        title="Apagar serviço?"
+        description={`Tem certeza que deseja apagar o serviço "${pendingDeleteService?.name || "este serviço"}"? Esta ação não pode ser desfeita.`}
+        confirmText="Sim, apagar"
+        cancelText="Não, manter"
+        confirmVariant="danger"
+        isLoading={isMutatingId !== null}
+        onConfirm={() => void confirmDeleteService()}
+        onCancel={() => setPendingDeleteService(null)}
+      />
       <div className="flex flex-col gap-3 rounded-3xl border border-(--color-border-soft) bg-(--color-bg-card)/80 p-4 shadow-[0_18px_40px_rgba(7,9,14,0.18)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div className="relative w-full sm:max-w-xl">
           <svg
