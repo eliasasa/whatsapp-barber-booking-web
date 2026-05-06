@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
-import Navbar from "@/components/layouts/navbar/Navbar";
 import { ToastProvider } from "@/components/ui/toast";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ProtectedRouteWrapper } from "@/components/auth/ProtectedRouteWrapper";

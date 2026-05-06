@@ -29,7 +29,7 @@ export function ProtectedRouteWrapper({ children }: { children: React.ReactNode 
       // User is authenticated and trying to access public route (login)
       router.push("/");
     }
-  }, [isAuthenticated, isLoading, pathname, checkAuth, router]);
+  }, [isAuthenticated, isLoading, isPublicRoute, pathname, checkAuth, router]);
 
   return (
     <>

@@ -36,12 +36,26 @@ export async function apiFetch<T>(
     headers,
   });
 
+  const responseBody = await response.text();
+
   if (!response.ok) {
-    const errorBody = await response.text();
+    if (response.status === 401 && token && typeof window !== "undefined") {
+      localStorage.removeItem("auth_token");
+      window.location.assign("/login");
+    }
+
     throw new Error(
-      `API error (${response.status}): ${errorBody || response.statusText}`,
+      `API error (${response.status}): ${responseBody || response.statusText}`,
     );
   }
 
-  return (await response.json()) as T;
+  if (!responseBody) {
+    return undefined as T;
+  }
+
+  try {
+    return JSON.parse(responseBody) as T;
+  } catch {
+    return responseBody as T;
+  }
 }
