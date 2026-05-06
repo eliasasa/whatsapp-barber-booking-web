@@ -30,8 +30,6 @@ function LayoutContent({
     <body className="min-h-screen flex flex-col">
       <ToastProvider>
         <ProtectedRouteWrapper>
-          <Navbar />
-
           <main className="flex-1 pb-8 sm:pb-10">
             {children}
           </main>

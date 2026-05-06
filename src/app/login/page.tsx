@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -74,79 +73,85 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center bg-linear-to-br from-[#121212] to-[#1a1a1a]">
         <div className="text-center">
-          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-border-soft)] border-r-[var(--color-accent)] mx-auto" />
-          <p className="text-sm text-[var(--color-text-secondary)]">Carregando...</p>
+          <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-(--color-border-soft) border-t-(--color-accent) mx-auto" />
+          <p className="text-sm text-(--color-text-secondary)">Carregando...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg-dark)] px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-[var(--color-text-primary)] sm:text-4xl">
-            Barber Painel
+    <div className="flex min-h-screen items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-sm space-y-6">
+        {/* Header Section */}
+        <div className="text-center pb-4">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-(--color-text-primary)">
+            Bem-vindo
           </h1>
-          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-            Faça login para acessar o sistema
+          <p className="mt-2 text-sm text-(--color-text-secondary)">
+            Faça login para acessar o painel
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="rounded-xl border border-[var(--color-border-soft)] bg-[var(--color-bg-card)] p-8 space-y-6">
-            <div className="flex flex-col">
-              <label
-                htmlFor="email"
-                className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]"
-              >
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="seu@email.com"
-                disabled={isSubmitting}
-                className="rounded-xl border border-[var(--color-border-soft)] bg-[var(--color-bg-dark)] px-4 py-3 text-[var(--color-text-primary)] outline-none transition-all duration-200 placeholder:text-[var(--color-text-disabled)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 disabled:opacity-50"
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <label
-                htmlFor="password"
-                className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]"
-              >
-                Senha
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
-                disabled={isSubmitting}
-                className="rounded-xl border border-[var(--color-border-soft)] bg-[var(--color-bg-dark)] px-4 py-3 text-[var(--color-text-primary)] outline-none transition-all duration-200 placeholder:text-[var(--color-text-disabled)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 disabled:opacity-50"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              isLoading={isSubmitting}
-              disabled={!email.trim() || !password.trim()}
-              className="w-full"
-              rightIcon={<span>{">"}</span>}
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Email Field */}
+          <div className="flex flex-col">
+            <label
+              htmlFor="email"
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)"
             >
-              {isSubmitting ? "Entrando..." : "Entrar"}
-            </Button>
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="seu@email.com"
+              disabled={isSubmitting}
+              className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-secondary) focus:border-(--color-accent) focus:bg-(--color-bg-card) disabled:opacity-50 disabled:cursor-not-allowed"
+            />
           </div>
 
-          <p className="text-center text-xs text-[var(--color-text-secondary)]">
-            Sistema de gerenciamento de agendamentos da barbearia
-          </p>
+          {/* Password Field */}
+          <div className="flex flex-col">
+            <label
+              htmlFor="password"
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)"
+            >
+              Senha
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="••••••••"
+              disabled={isSubmitting}
+              className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-secondary) focus:border-(--color-accent) focus:bg-(--color-bg-card) disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={!email.trim() || !password.trim() || isSubmitting}
+            className="w-full mt-6 bg-(--color-accent) hover:bg-[#C19B2E] text-[#121212] font-semibold py-2.5 px-4 rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-2 text-sm"
+          >
+            {isSubmitting ? (
+              <>
+                <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#121212] border-t-transparent" />
+                Entrando...
+              </>
+            ) : (
+              <>
+                Entrar
+              </>
+            )}
+          </button>
         </form>
       </div>
     </div>

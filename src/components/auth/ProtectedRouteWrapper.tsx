@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import Navbar from "@/components/layouts/navbar/Navbar";
 
 const PUBLIC_ROUTES = ["/login"];
 
@@ -10,10 +11,9 @@ export function ProtectedRouteWrapper({ children }: { children: React.ReactNode 
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, isLoading, checkAuth } = useAuth();
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
   useEffect(() => {
-    const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
-
     if (isLoading) {
       return; // Still loading auth state
     }
@@ -31,5 +31,10 @@ export function ProtectedRouteWrapper({ children }: { children: React.ReactNode 
     }
   }, [isAuthenticated, isLoading, pathname, checkAuth, router]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {!isPublicRoute && <Navbar />}
+      {children}
+    </>
+  );
 }
