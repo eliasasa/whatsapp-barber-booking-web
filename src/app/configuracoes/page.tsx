@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
 import {
   getBotState,
@@ -11,6 +12,24 @@ import {
   updateGreetingMessage,
 } from "@/features/bot/api";
 import { getBlockedClients, unblockClient, blockClientByPhone } from "@/features/clients";
+import {
+  createAvailability,
+  createAvailabilityBlock,
+  deleteAvailability,
+  deleteAvailabilityBlock,
+  listAvailability,
+  listAvailabilityBlocks,
+  updateAvailability,
+  updateAvailabilityBlock,
+} from "@/features/availability";
+import type { AvailabilityBlock, AvailabilityItem } from "@/features/availability/types";
+import {
+  WEEKDAY_OPTIONS,
+  formatDateTimeLocal,
+  formatTimeToInput,
+  toApiDateTime,
+  toApiTime,
+} from "./availability-utils";
 
 type BotState = {
   paused: boolean;
@@ -463,6 +482,754 @@ function BlockByPhoneCard() {
   );
 }
 
+function getWeekdayLabel(weekday: number) {
+  return WEEKDAY_OPTIONS.find((option) => option.value === weekday)?.label ?? "Dia da semana";
+}
+
+type WeeklyDraft = {
+  weekday: string;
+  startTime: string;
+  endTime: string;
+};
+
+type BlockDraft = {
+  startAt: string;
+  endAt: string;
+  reason: string;
+};
+
+function WeeklyAvailabilityCard() {
+  const { addToast } = useToast();
+  const [items, setItems] = useState<AvailabilityItem[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, WeeklyDraft>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AvailabilityItem | null>(null);
+  const [weekday, setWeekday] = useState("1");
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("18:00");
+
+  useEffect(() => {
+    async function loadAvailability() {
+      try {
+        setIsLoading(true);
+        const data = await listAvailability();
+        const sorted = [...data].sort((first, second) => {
+          if (first.weekday !== second.weekday) {
+            return first.weekday - second.weekday;
+          }
+
+          return first.startTime.localeCompare(second.startTime);
+        });
+
+        setItems(sorted);
+        setDrafts(
+          Object.fromEntries(
+            sorted.map((item) => [
+              item.id,
+              {
+                weekday: String(item.weekday),
+                startTime: formatTimeToInput(item.startTime),
+                endTime: formatTimeToInput(item.endTime),
+              },
+            ]),
+          ),
+        );
+      } catch {
+        addToast({
+          title: "Erro ao carregar expediente",
+          description: "Não foi possível consultar os horários.",
+          type: "error",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void loadAvailability();
+  }, [addToast]);
+
+  function updateDraft(itemId: string, field: keyof WeeklyDraft, value: string) {
+    setDrafts((current) => ({
+      ...current,
+      [itemId]: {
+        ...(current[itemId] ?? { weekday: "1", startTime: "09:00", endTime: "18:00" }),
+        [field]: value,
+      },
+    }));
+  }
+
+  function validateTimeRange(start: string, end: string) {
+    if (!start || !end) return false;
+    return start < end;
+  }
+
+  async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!validateTimeRange(startTime, endTime)) {
+      addToast({
+        title: "Horário inválido",
+        description: "O horário inicial precisa ser menor que o final.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      const created = await createAvailability({
+        weekday: Number(weekday),
+        startTime: toApiTime(startTime),
+        endTime: toApiTime(endTime),
+      });
+
+      setItems((current) =>
+        [...current, created].sort((first, second) => {
+          if (first.weekday !== second.weekday) {
+            return first.weekday - second.weekday;
+          }
+
+          return first.startTime.localeCompare(second.startTime);
+        }),
+      );
+      setDrafts((current) => ({
+        ...current,
+        [created.id]: {
+          weekday: String(created.weekday),
+          startTime: formatTimeToInput(created.startTime),
+          endTime: formatTimeToInput(created.endTime),
+        },
+      }));
+
+      addToast({
+        title: "Expediente criado",
+        description: "O novo horário semanal foi salvo.",
+        type: "success",
+      });
+    } catch (caughtError) {
+      addToast({
+        title: "Erro ao criar expediente",
+        description: caughtError instanceof Error ? caughtError.message : "Tente novamente em instantes.",
+        type: "error",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
+  async function handleSave(item: AvailabilityItem) {
+    const draft = drafts[item.id] ?? {
+      weekday: String(item.weekday),
+      startTime: formatTimeToInput(item.startTime),
+      endTime: formatTimeToInput(item.endTime),
+    };
+
+    if (!validateTimeRange(draft.startTime, draft.endTime)) {
+      addToast({
+        title: "Horário inválido",
+        description: "O horário inicial precisa ser menor que o final.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setSavingId(item.id);
+      const updated = await updateAvailability(item.id, {
+        weekday: Number(draft.weekday),
+        startTime: toApiTime(draft.startTime),
+        endTime: toApiTime(draft.endTime),
+      });
+
+      setItems((current) =>
+        current
+          .map((currentItem) => (currentItem.id === updated.id ? updated : currentItem))
+          .sort((first, second) => {
+            if (first.weekday !== second.weekday) {
+              return first.weekday - second.weekday;
+            }
+
+            return first.startTime.localeCompare(second.startTime);
+          }),
+      );
+
+      addToast({
+        title: "Expediente atualizado",
+        description: "As alterações foram salvas.",
+        type: "success",
+      });
+    } catch (caughtError) {
+      addToast({
+        title: "Erro ao atualizar expediente",
+        description: caughtError instanceof Error ? caughtError.message : "Tente novamente em instantes.",
+        type: "error",
+      });
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function handleDelete() {
+    if (!pendingDelete) return;
+
+    try {
+      setSavingId(pendingDelete.id);
+      await deleteAvailability(pendingDelete.id);
+      setItems((current) => current.filter((item) => item.id !== pendingDelete.id));
+      setDrafts((current) => {
+        const next = { ...current };
+        delete next[pendingDelete.id];
+        return next;
+      });
+      addToast({
+        title: "Expediente removido",
+        description: "O horário semanal foi excluído.",
+        type: "success",
+      });
+    } catch (caughtError) {
+      addToast({
+        title: "Erro ao remover expediente",
+        description: caughtError instanceof Error ? caughtError.message : "Tente novamente em instantes.",
+        type: "error",
+      });
+    } finally {
+      setSavingId(null);
+      setPendingDelete(null);
+    }
+  }
+
+  const sortedItems = [...items].sort((first, second) => {
+    if (first.weekday !== second.weekday) {
+      return first.weekday - second.weekday;
+    }
+
+    return first.startTime.localeCompare(second.startTime);
+  });
+
+  return (
+    <div className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) p-5 sm:p-6">
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Remover expediente?"
+        description={`Tem certeza que deseja remover o expediente de ${pendingDelete ? getWeekdayLabel(pendingDelete.weekday) : "este dia"}?`}
+        confirmText="Sim, remover"
+        cancelText="Não, manter"
+        confirmVariant="danger"
+        isLoading={savingId !== null}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">
+            Gerenciar expediente semanal
+          </p>
+          <p className="mt-2 text-sm text-(--color-text-secondary)">
+            Defina os horários de atendimento por dia da semana.
+          </p>
+        </div>
+
+        <span className="inline-flex items-center rounded-full border border-(--color-border-soft) bg-(--color-bg-soft) px-3 py-1 text-xs font-semibold text-(--color-text-secondary)">
+          {sortedItems.length} expediente{sortedItems.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <form onSubmit={handleCreate} className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_0.8fr_0.8fr_auto]">
+        <div>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+            Dia da semana
+          </label>
+          <select
+            value={weekday}
+            onChange={(event) => setWeekday(event.target.value)}
+            className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors focus:border-(--color-accent)"
+          >
+            {WEEKDAY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+            Início
+          </label>
+          <input
+            type="time"
+            value={startTime}
+            onChange={(event) => setStartTime(event.target.value)}
+            className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors focus:border-(--color-accent)"
+          />
+        </div>
+        <div>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+            Fim
+          </label>
+          <input
+            type="time"
+            value={endTime}
+            onChange={(event) => setEndTime(event.target.value)}
+            className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors focus:border-(--color-accent)"
+          />
+        </div>
+        <div className="flex items-end sm:col-span-2 lg:col-span-1">
+          <Button type="submit" isLoading={isCreating} className="w-full">
+            Adicionar
+          </Button>
+        </div>
+      </form>
+
+      {isLoading ? (
+        <div className="mt-6 rounded-xl border border-dashed border-(--color-border-soft) bg-(--color-bg-soft) py-10 text-center text-sm text-(--color-text-secondary)">
+          Carregando expediente...
+        </div>
+      ) : sortedItems.length === 0 ? (
+        <div className="mt-6 rounded-xl border border-dashed border-(--color-border-soft) bg-(--color-bg-soft) py-10 text-center text-sm text-(--color-text-secondary)">
+          Nenhum expediente cadastrado ainda.
+        </div>
+      ) : (
+        <div className="mt-6 space-y-3">
+          {sortedItems.map((item) => {
+            const draft = drafts[item.id] ?? {
+              weekday: String(item.weekday),
+              startTime: formatTimeToInput(item.startTime),
+              endTime: formatTimeToInput(item.endTime),
+            };
+
+            return (
+              <div key={item.id} className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) p-4">
+                <div className="grid gap-3 overflow-x-hidden sm:grid-cols-2 lg:grid-cols-[1.2fr_0.8fr_0.8fr_minmax(0,200px)]">
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+                      Dia
+                    </label>
+                    <select
+                      value={draft.weekday}
+                      onChange={(event) => updateDraft(item.id, "weekday", event.target.value)}
+                      className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) px-4 py-3 text-(--color-text-primary) outline-none transition-colors focus:border-(--color-accent)"
+                    >
+                      {WEEKDAY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+                      Início
+                    </label>
+                    <input
+                      type="time"
+                      value={draft.startTime}
+                      onChange={(event) => updateDraft(item.id, "startTime", event.target.value)}
+                      className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) px-4 py-3 text-(--color-text-primary) outline-none transition-colors focus:border-(--color-accent)"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+                      Fim
+                    </label>
+                    <input
+                      type="time"
+                      value={draft.endTime}
+                      onChange={(event) => updateDraft(item.id, "endTime", event.target.value)}
+                      className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) px-4 py-3 text-(--color-text-primary) outline-none transition-colors focus:border-(--color-accent)"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-1 lg:items-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => void handleSave(item)}
+                      isLoading={savingId === item.id}
+                      className="min-w-0"
+                    >
+                      Salvar
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setPendingDelete(item)}
+                      disabled={savingId !== null}
+                      className="min-w-0"
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AvailabilityBlocksCard() {
+  const { addToast } = useToast();
+  const [items, setItems] = useState<AvailabilityBlock[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, BlockDraft>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AvailabilityBlock | null>(null);
+  const [startAt, setStartAt] = useState("");
+  const [endAt, setEndAt] = useState("");
+  const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    async function loadBlocks() {
+      try {
+        setIsLoading(true);
+        const data = await listAvailabilityBlocks();
+        const sorted = [...data].sort(
+          (first, second) => new Date(first.startAt).getTime() - new Date(second.startAt).getTime(),
+        );
+
+        setItems(sorted);
+        setDrafts(
+          Object.fromEntries(
+            sorted.map((item) => [
+              item.id,
+              {
+                startAt: formatDateTimeLocal(item.startAt),
+                endAt: formatDateTimeLocal(item.endAt),
+                reason: item.reason ?? "",
+              },
+            ]),
+          ),
+        );
+      } catch {
+        addToast({
+          title: "Erro ao carregar bloqueios",
+          description: "Não foi possível consultar os bloqueios.",
+          type: "error",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void loadBlocks();
+  }, [addToast]);
+
+  function updateDraft(itemId: string, field: keyof BlockDraft, value: string) {
+    setDrafts((current) => ({
+      ...current,
+      [itemId]: {
+        ...(current[itemId] ?? { startAt: "", endAt: "", reason: "" }),
+        [field]: value,
+      },
+    }));
+  }
+
+  function validateRange(start: string, end: string) {
+    if (!start || !end) return false;
+    return new Date(start) < new Date(end);
+  }
+
+  async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!validateRange(startAt, endAt)) {
+      addToast({
+        title: "Período inválido",
+        description: "O início do bloqueio precisa ser antes do fim.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      const created = await createAvailabilityBlock({
+        startAt: toApiDateTime(startAt),
+        endAt: toApiDateTime(endAt),
+        reason: reason.trim() || undefined,
+      });
+
+      setItems((current) =>
+        [...current, created].sort(
+          (first, second) => new Date(first.startAt).getTime() - new Date(second.startAt).getTime(),
+        ),
+      );
+      setDrafts((current) => ({
+        ...current,
+        [created.id]: {
+          startAt: formatDateTimeLocal(created.startAt),
+          endAt: formatDateTimeLocal(created.endAt),
+          reason: created.reason ?? "",
+        },
+      }));
+      setStartAt("");
+      setEndAt("");
+      setReason("");
+
+      addToast({
+        title: "Bloqueio criado",
+        description: "O período bloqueado foi salvo com sucesso.",
+        type: "success",
+      });
+    } catch (caughtError) {
+      addToast({
+        title: "Erro ao criar bloqueio",
+        description: caughtError instanceof Error ? caughtError.message : "Tente novamente em instantes.",
+        type: "error",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
+  async function handleSave(item: AvailabilityBlock) {
+    const draft = drafts[item.id] ?? {
+      startAt: formatDateTimeLocal(item.startAt),
+      endAt: formatDateTimeLocal(item.endAt),
+      reason: item.reason ?? "",
+    };
+
+    if (!validateRange(draft.startAt, draft.endAt)) {
+      addToast({
+        title: "Período inválido",
+        description: "O início do bloqueio precisa ser antes do fim.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setSavingId(item.id);
+      const updated = await updateAvailabilityBlock(item.id, {
+        startAt: toApiDateTime(draft.startAt),
+        endAt: toApiDateTime(draft.endAt),
+        reason: draft.reason.trim() || undefined,
+      });
+
+      setItems((current) =>
+        current
+          .map((currentItem) => (currentItem.id === updated.id ? updated : currentItem))
+          .sort(
+            (first, second) => new Date(first.startAt).getTime() - new Date(second.startAt).getTime(),
+          ),
+      );
+      addToast({
+        title: "Bloqueio atualizado",
+        description: "As alterações foram salvas.",
+        type: "success",
+      });
+    } catch (caughtError) {
+      addToast({
+        title: "Erro ao atualizar bloqueio",
+        description: caughtError instanceof Error ? caughtError.message : "Tente novamente em instantes.",
+        type: "error",
+      });
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function handleDelete() {
+    if (!pendingDelete) return;
+
+    try {
+      setSavingId(pendingDelete.id);
+      await deleteAvailabilityBlock(pendingDelete.id);
+      setItems((current) => current.filter((item) => item.id !== pendingDelete.id));
+      setDrafts((current) => {
+        const next = { ...current };
+        delete next[pendingDelete.id];
+        return next;
+      });
+      addToast({
+        title: "Bloqueio removido",
+        description: "O período bloqueado foi excluído.",
+        type: "success",
+      });
+    } catch (caughtError) {
+      addToast({
+        title: "Erro ao remover bloqueio",
+        description: caughtError instanceof Error ? caughtError.message : "Tente novamente em instantes.",
+        type: "error",
+      });
+    } finally {
+      setSavingId(null);
+      setPendingDelete(null);
+    }
+  }
+
+  const sortedItems = [...items].sort(
+    (first, second) => new Date(first.startAt).getTime() - new Date(second.startAt).getTime(),
+  );
+
+  return (
+    <div className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) p-5 sm:p-6">
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Remover bloqueio?"
+        description={`Tem certeza que deseja remover o bloqueio${pendingDelete?.reason ? ` (${pendingDelete.reason})` : ""}?`}
+        confirmText="Sim, remover"
+        cancelText="Não, manter"
+        confirmVariant="danger"
+        isLoading={savingId !== null}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">
+            Gerenciar bloqueios
+          </p>
+          <p className="mt-2 text-sm text-(--color-text-secondary)">
+            Registre intervalos específicos, como férias ou indisponibilidades pontuais.
+          </p>
+        </div>
+
+        <span className="inline-flex items-center rounded-full border border-(--color-border-soft) bg-(--color-bg-soft) px-3 py-1 text-xs font-semibold text-(--color-text-secondary)">
+          {sortedItems.length} bloqueio{sortedItems.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <form onSubmit={handleCreate} className="mt-5 space-y-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+              Início
+            </label>
+            <input
+              type="datetime-local"
+              value={startAt}
+              onChange={(event) => setStartAt(event.target.value)}
+              className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors focus:border-(--color-accent)"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+              Fim
+            </label>
+            <input
+              type="datetime-local"
+              value={endAt}
+              onChange={(event) => setEndAt(event.target.value)}
+              className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors focus:border-(--color-accent)"
+            />
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+              Motivo
+            </label>
+            <input
+              type="text"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Férias, evento, manutenção..."
+              className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-secondary) focus:border-(--color-accent)"
+            />
+          </div>
+          <Button type="submit" isLoading={isCreating} className="w-full sm:w-auto">
+            Adicionar
+          </Button>
+        </div>
+      </form>
+
+      {isLoading ? (
+        <div className="mt-6 rounded-xl border border-dashed border-(--color-border-soft) bg-(--color-bg-soft) py-10 text-center text-sm text-(--color-text-secondary)">
+          Carregando bloqueios...
+        </div>
+      ) : sortedItems.length === 0 ? (
+        <div className="mt-6 rounded-xl border border-dashed border-(--color-border-soft) bg-(--color-bg-soft) py-10 text-center text-sm text-(--color-text-secondary)">
+          Nenhum bloqueio cadastrado ainda.
+        </div>
+      ) : (
+        <div className="mt-6 space-y-3">
+          {sortedItems.map((item) => {
+            const draft = drafts[item.id] ?? {
+              startAt: formatDateTimeLocal(item.startAt),
+              endAt: formatDateTimeLocal(item.endAt),
+              reason: item.reason ?? "",
+            };
+
+            return (
+              <div key={item.id} className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) p-4">
+                <div className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr]">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+                        Início
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={draft.startAt}
+                        onChange={(event) => updateDraft(item.id, "startAt", event.target.value)}
+                        className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) px-4 py-3 text-(--color-text-primary) outline-none transition-colors focus:border-(--color-accent)"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+                        Fim
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={draft.endAt}
+                        onChange={(event) => updateDraft(item.id, "endAt", event.target.value)}
+                        className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) px-4 py-3 text-(--color-text-primary) outline-none transition-colors focus:border-(--color-accent)"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+                        Motivo
+                      </label>
+                      <input
+                        type="text"
+                        value={draft.reason}
+                        onChange={(event) => updateDraft(item.id, "reason", event.target.value)}
+                        placeholder="(opcional)"
+                        className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-secondary) focus:border-(--color-accent)"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2 sm:col-span-1 sm:items-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => void handleSave(item)}
+                        isLoading={savingId === item.id}
+                        className="whitespace-nowrap"
+                      >
+                        Salvar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setPendingDelete(item)}
+                        disabled={savingId !== null}
+                        className="whitespace-nowrap"
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ConfiguracoesPage() {
   return (
     <section className="container-shell pt-6 sm:pt-8">
@@ -489,6 +1256,16 @@ export default function ConfiguracoesPage() {
 
         <div className="reveal-up" style={{ animationDelay: "160ms" }}>
           <BlockByPhoneCard />
+        </div>
+
+        <div className="mt-2 grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <div className="reveal-up" style={{ animationDelay: "200ms" }}>
+            <WeeklyAvailabilityCard />
+          </div>
+
+          <div className="reveal-up" style={{ animationDelay: "240ms" }}>
+            <AvailabilityBlocksCard />
+          </div>
         </div>
       </div>
     </section>
