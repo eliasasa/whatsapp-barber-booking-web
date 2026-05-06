@@ -1,8 +1,9 @@
 import ClientsList from "../../components/clients/ClientsList";
 import { listClients } from "../../features/clients/api/listClients";
+import type { Client } from "../../types/client";
 
 export default async function ClientesPage() {
-  let clients = [];
+  let clients: Client[] = [];
   let errorMessage: string | null = null;
 
   try {
