@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import Navbar from "@/components/layouts/navbar/Navbar";
 import { ToastProvider } from "@/components/ui/toast";
+import { AuthProvider } from "@/providers/AuthProvider";
+import { ProtectedRouteWrapper } from "@/components/auth/ProtectedRouteWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,18 +21,15 @@ export const metadata: Metadata = {
   description: "Painel de operação para agendamentos da barbearia",
 };
 
-export default function RootLayout({
+function LayoutContent({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-screen flex flex-col">
-        <ToastProvider>
+    <body className="min-h-screen flex flex-col">
+      <ToastProvider>
+        <ProtectedRouteWrapper>
           <Navbar />
 
           <main className="flex-1 pb-8 sm:pb-10">
@@ -42,8 +41,25 @@ export default function RootLayout({
               <p>Barber Dashboard v1.0.0</p>
             </div>
           </footer>
-        </ToastProvider>
-      </body>
+        </ProtectedRouteWrapper>
+      </ToastProvider>
+    </body>
+  );
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html
+      lang="pt-BR"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <AuthProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </AuthProvider>
     </html>
   );
 }
