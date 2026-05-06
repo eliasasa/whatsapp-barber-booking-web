@@ -79,7 +79,7 @@ body::after {
     radial-gradient(circle at 54% 56%, rgba(250, 214, 138, 0.03) 0%, rgba(250, 214, 138, 0) 54%);
 }
 
-body > :not(#toast-portal) {
+body > :not(#toast-portal):not(#modal-portal) {
   position: relative;
   z-index: 1;
 }

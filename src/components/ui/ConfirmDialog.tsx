@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/Button";
 
 type ConfirmDialogProps = {
@@ -46,7 +47,7 @@ export function ConfirmDialog({
     return null;
   }
 
-  return (
+  const dialogContent = (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-4 sm:items-center">
       <button
         type="button"
@@ -80,4 +81,12 @@ export function ConfirmDialog({
       </div>
     </div>
   );
+
+  const portalElement = typeof document !== "undefined" ? document.getElementById("modal-portal") : null;
+
+  if (!portalElement) {
+    return null;
+  }
+
+  return createPortal(dialogContent, portalElement);
 }

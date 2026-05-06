@@ -41,6 +41,7 @@ function LayoutContent({
           </footer>
         </ProtectedRouteWrapper>
       </ToastProvider>
+      <div id="modal-portal" />
     </body>
   );
 }
