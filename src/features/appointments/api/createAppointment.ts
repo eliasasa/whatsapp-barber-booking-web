@@ -6,6 +6,7 @@ type CreateAppointmentPayload = {
   clientId: string;
   serviceId: string;
   startAt: string;
+  address: string;
   notes?: string;
 };
 

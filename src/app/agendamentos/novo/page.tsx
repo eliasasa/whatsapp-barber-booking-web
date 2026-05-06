@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/toast";
 import { createAppointment } from "@/features/appointments";
+import { listAvailability, listAvailabilityBlocks } from "@/features/availability";
 import { listClients } from "@/features/clients";
 import { listServices } from "@/features/services";
+import type { AvailabilityBlock, AvailabilityItem } from "@/features/availability/types";
 import type { Client } from "@/types/client";
 import type { Service } from "@/types/service";
 
@@ -22,37 +24,168 @@ function getMinDateTime(): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+function getFriendlyApiError(
+  caughtError: unknown,
+  fallbackMessage: string,
+): string {
+  if (!(caughtError instanceof Error)) {
+    return fallbackMessage;
+  }
+
+  const rawMessage = caughtError.message?.trim();
+  if (!rawMessage) {
+    return fallbackMessage;
+  }
+
+  const jsonStartIndex = rawMessage.indexOf("{");
+  if (jsonStartIndex >= 0) {
+    const maybeJson = rawMessage.slice(jsonStartIndex);
+
+    try {
+      const parsed = JSON.parse(maybeJson) as {
+        error?: string;
+        message?: string;
+      };
+
+      const candidate = parsed.error ?? parsed.message;
+      if (candidate && candidate.trim()) {
+        return candidate.trim();
+      }
+    } catch {
+      // Keep fallback flow for non-JSON payloads.
+    }
+  }
+
+  const normalized = rawMessage.replace(/^API error \(\d+\):\s*/i, "").trim();
+  return normalized || fallbackMessage;
+}
+
+function timeToMinutes(value: string): number {
+  const [hours, minutes] = value.split(":").map((part) => Number(part));
+  return hours * 60 + minutes;
+}
+
+function toWeekdayFromDate(date: Date): number {
+  const weekday = date.getDay();
+  return weekday === 0 ? 7 : weekday;
+}
+
+function doesOverlap(
+  startA: Date,
+  endA: Date,
+  startB: Date,
+  endB: Date,
+): boolean {
+  return startA < endB && endA > startB;
+}
+
+function validateAgainstAvailability(
+  startAtDate: Date,
+  durationMinutes: number,
+  availability: AvailabilityItem[],
+  blocks: AvailabilityBlock[],
+): { valid: boolean; message?: string } {
+  if (durationMinutes <= 0) {
+    return { valid: false, message: "Duração do serviço inválida." };
+  }
+
+  const appointmentStart = startAtDate;
+  const appointmentEnd = new Date(
+    appointmentStart.getTime() + durationMinutes * 60 * 1000,
+  );
+
+  if (appointmentEnd.toDateString() !== appointmentStart.toDateString()) {
+    return {
+      valid: false,
+      message: "O agendamento precisa começar e terminar no mesmo dia.",
+    };
+  }
+
+  const weekday = toWeekdayFromDate(appointmentStart);
+  const dayAvailability = availability.filter((item) => item.weekday === weekday);
+
+  if (dayAvailability.length === 0) {
+    return {
+      valid: false,
+      message: "Não há expediente configurado para esse dia da semana.",
+    };
+  }
+
+  const startMinutes = appointmentStart.getHours() * 60 + appointmentStart.getMinutes();
+  const endMinutes = appointmentEnd.getHours() * 60 + appointmentEnd.getMinutes();
+
+  const fitsAnyWindow = dayAvailability.some((item) => {
+    const windowStart = timeToMinutes(item.startTime);
+    const windowEnd = timeToMinutes(item.endTime);
+    return startMinutes >= windowStart && endMinutes <= windowEnd;
+  });
+
+  if (!fitsAnyWindow) {
+    return {
+      valid: false,
+      message: "Horário fora do expediente configurado.",
+    };
+  }
+
+  const conflictingBlock = blocks.find((block) =>
+    doesOverlap(
+      appointmentStart,
+      appointmentEnd,
+      new Date(block.startAt),
+      new Date(block.endAt),
+    ),
+  );
+
+  if (conflictingBlock) {
+    const reason = conflictingBlock.reason?.trim();
+    return {
+      valid: false,
+      message: reason
+        ? `Horário indisponível por bloqueio: ${reason}.`
+        : "Horário indisponível por bloqueio configurado.",
+    };
+  }
+
+  return { valid: true };
+}
+
 export default function NovoAgendamentoPage() {
   const router = useRouter();
   const { addToast } = useToast();
 
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [availability, setAvailability] = useState<AvailabilityItem[]>([]);
+  const [availabilityBlocks, setAvailabilityBlocks] = useState<AvailabilityBlock[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   const [clientId, setClientId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [startAt, setStartAt] = useState("");
+  const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Load clients and services on mount
   useEffect(() => {
     async function loadData() {
       try {
-        const [clientsData, servicesData] = await Promise.all([
+        const [clientsData, servicesData, availabilityData, blocksData] = await Promise.all([
           listClients(),
           listServices(),
+          listAvailability(),
+          listAvailabilityBlocks(),
         ]);
 
         setClients(clientsData);
         setServices(servicesData);
+        setAvailability(availabilityData);
+        setAvailabilityBlocks(blocksData);
       } catch (caughtError) {
-        const message =
-          caughtError instanceof Error
-            ? caughtError.message
-            : "Falha ao carregar dados.";
+        const message = getFriendlyApiError(
+          caughtError,
+          "Falha ao carregar dados.",
+        );
         addToast({
           title: "Erro ao carregar",
           description: message,
@@ -96,18 +229,53 @@ export default function NovoAgendamentoPage() {
       return;
     }
 
+    if (!address.trim()) {
+      addToast({
+        title: "Campo obrigatório",
+        description: "Informe o endereço do atendimento.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setIsSaving(true);
-      setError(null);
+
+      const selectedService = services.find((service) => service.id === serviceId);
+      if (!selectedService) {
+        addToast({
+          title: "Serviço inválido",
+          description: "Selecione um serviço válido para continuar.",
+          type: "error",
+        });
+        return;
+      }
 
       // Convert local datetime to ISO string in UTC
       const localDate = new Date(startAt);
+      const validation = validateAgainstAvailability(
+        localDate,
+        selectedService.duration,
+        availability,
+        availabilityBlocks,
+      );
+
+      if (!validation.valid) {
+        addToast({
+          title: "Horário indisponível",
+          description: validation.message ?? "Escolha outro horário.",
+          type: "error",
+        });
+        return;
+      }
+
       const isoString = localDate.toISOString();
 
       await createAppointment({
         clientId: clientId.trim(),
         serviceId: serviceId.trim(),
         startAt: isoString,
+        address: address.trim(),
         notes: notes.trim() || undefined,
       });
 
@@ -119,11 +287,10 @@ export default function NovoAgendamentoPage() {
 
       router.push("/agendamentos");
     } catch (caughtError) {
-      const message =
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Não foi possível criar o agendamento.";
-      setError(message);
+      const message = getFriendlyApiError(
+        caughtError,
+        "Não foi possível criar o agendamento.",
+      );
       addToast({
         title: "Falha ao criar",
         description: message,
@@ -145,13 +312,6 @@ export default function NovoAgendamentoPage() {
           Preencha os dados do cliente, serviço e horário para criar um novo agendamento.
         </p>
       </div>
-
-      {error && (
-        <div className="mt-6 rounded-xl border border-(--color-status-busy) bg-[rgba(216,81,81,0.12)] p-4">
-          <p className="text-sm font-medium text-(--color-status-busy)">Erro ao agendar:</p>
-          <p className="mt-1.5 text-sm text-(--color-status-busy)/80">{error}</p>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-6">
         {/* Dados principais */}
@@ -258,6 +418,27 @@ export default function NovoAgendamentoPage() {
               <p className="mt-2 text-xs text-(--color-accent)">✓ Selecionado</p>
             )}
           </div>
+
+          <div className="flex flex-col">
+            <label
+              htmlFor="address"
+              className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)"
+            >
+              <span>Endereço</span>
+              <span className="text-(--color-status-busy)">*</span>
+            </label>
+            <input
+              id="address"
+              type="text"
+              value={address}
+              onChange={(event) => setAddress(event.target.value)}
+              placeholder="Av. Exemplo, 123, Apt 45"
+              className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-dark) px-4 py-3 text-(--color-text-primary) transition-all duration-200 focus:border-(--color-accent) focus:ring-2 focus:ring-(--color-accent)/20"
+            />
+            {address.trim() && (
+              <p className="mt-2 text-xs text-(--color-accent)">✓ Preenchido</p>
+            )}
+          </div>
         </div>
 
         {/* Observações */}
@@ -291,7 +472,7 @@ export default function NovoAgendamentoPage() {
           <Button
             type="submit"
             isLoading={isSaving}
-            disabled={isLoadingData || !clientId || !serviceId || !startAt}
+            disabled={isLoadingData || !clientId || !serviceId || !startAt || !address.trim()}
             rightIcon={<span>{">"}</span>}
             className="flex-1"
           >
