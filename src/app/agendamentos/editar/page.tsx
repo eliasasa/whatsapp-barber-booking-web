@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -30,7 +30,7 @@ function parseApiError(error: unknown): string {
   return "Erro ao processar a solicitação.";
 }
 
-export default function EditarAgendamentoPage() {
+function EditarAgendamentoPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToast } = useToast();
@@ -228,5 +228,21 @@ export default function EditarAgendamentoPage() {
         </div>
       </form>
     </section>
+  );
+}
+
+export default function EditarAgendamentoPage() {
+  return (
+    <Suspense
+      fallback={(
+        <section className="container-shell pt-6 sm:pt-8">
+          <div className="surface-panel p-6 sm:p-8">
+            <p className="text-[var(--color-text-secondary)]">Carregando agendamento...</p>
+          </div>
+        </section>
+      )}
+    >
+      <EditarAgendamentoPageContent />
+    </Suspense>
   );
 }
