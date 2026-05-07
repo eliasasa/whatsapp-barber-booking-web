@@ -108,14 +108,19 @@ Visão do painel em desktop e mobile. As imagens estão em `public/assets/images
 </div>
 
 Observação: o Next.js serve arquivos estáticos colocados na pasta `public`, portanto as imagens ficarão acessíveis em `/assets/images/<nome>`.
-	app/                # rotas e layout
-	components/         # UI e layout compartilhado
-	features/           # módulos por domínio (appointments, clients, services, bot, availability, auth)
-	hooks/              # hooks reutilizáveis
-	lib/                # config e utilitários de infraestrutura
-	providers/          # providers globais (auth, toast, etc.)
-	styles/             # estilos globais
-	types/              # contratos de tipos
+
+## Estrutura resumida
+
+```text
+src/
+  app/                # rotas e layout
+  components/         # UI e layout compartilhado
+  features/           # módulos por domínio (appointments, clients, services, bot, availability, auth)
+  hooks/              # hooks reutilizáveis
+  lib/                # config e utilitários de infraestrutura
+  providers/          # providers globais (auth, toast, etc.)
+  styles/             # estilos globais
+  types/              # contratos de tipos
 ```
 
 ## Observações
@@ -126,21 +131,3 @@ Observação: o Next.js serve arquivos estáticos colocados na pasta `public`, p
 ## Licença
 
 MIT. Veja [LICENSE](LICENSE).
-
-## Screenshots
-
-- Serviços (desktop):
-
-	![Serviços](/assets/images/services.png)
-
-- Agendamentos (mobile):
-
-	![Agendamentos - Mobile](/assets/images/appointments-mobile.png)
-
-- Configurações (mobile):
-
-	![Configurações - Mobile](/assets/images/config-mobile.png)
-
-- Configurações (desktop):
-
-	![Configurações - Desktop](/assets/images/config-desktop.png)
