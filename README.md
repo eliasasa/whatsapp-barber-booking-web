@@ -112,3 +112,7 @@ src/
 
 - Projeto com textos e formatos focados em pt-BR.
 - Em desenvolvimento, o dev indicator do Next pode ser desativado em next.config.ts.
+
+## Licença
+
+MIT. Veja [LICENSE](LICENSE).
