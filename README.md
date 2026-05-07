@@ -1,48 +1,114 @@
 # WhatsApp Barber Booking Web
 
-Frontend do painel de operacao para visualizar os agendamentos da barbearia.
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-20232A?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)
 
-## Comandos
+Painel web para operação da barbearia, com autenticação, gestão de agendamentos, clientes, serviços, disponibilidade e configurações do bot.
 
-```bash
-npm run dev    # sobe em http://localhost:3002
-npm run lint   # valida padrao e qualidade
-npm run build  # build de producao
-npm run start  # sobe build de producao
-```
+## Backend
 
-## Variaveis de ambiente
+Este frontend consome a API deste repositório:
 
-Opcional:
+https://github.com/eliasasa/whatsapp-barber-booking
+
+## Stack
+
+- Next.js 16 (App Router)
+- React 19
+- TypeScript 5
+- Tailwind CSS 4
+
+## Funcionalidades implementadas
+
+- Login com JWT (armazenado em localStorage).
+- Rotas protegidas com redirecionamento automático para /login quando necessário.
+- Injeção automática de Authorization Bearer Token nas chamadas HTTP.
+- Tratamento centralizado de erro de API e respostas vazias (ex.: DELETE/204).
+- Listagem, busca, filtro e cancelamento de agendamentos.
+- Criação e edição de agendamentos com validação de disponibilidade e bloqueios.
+- Campo de endereço no fluxo de agendamento.
+- CRUD de clientes.
+- CRUD de serviços, incluindo pausa/reativação.
+- Configurações operacionais: status do bot (pausar/retomar), reinício do bot, mensagem de boas-vindas, agenda semanal de disponibilidade, bloqueios de agenda e clientes bloqueados.
+- Modais de confirmação via portal para cobrir a tela inteira.
+- Navbar oculta na rota de login.
+
+## Rotas principais
+
+- /login
+- /
+- /agendamentos
+- /agendamentos/novo
+- /agendamentos/editar
+- /clientes
+- /clientes/novo
+- /clientes/[id]/editar
+- /servicos
+- /servicos/novo
+- /servicos/[id]/editar
+- /configuracoes
+
+## Requisitos
+
+- Node.js 20+
+- npm 10+
+
+## Configuração
+
+Crie um arquivo .env.local na raiz do projeto:
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 ```
 
-Se nao for definida, o frontend usa `http://localhost:3000` como padrao.
+Se a variável não for definida, o frontend usa http://localhost:3000 por padrão.
 
-## Estrutura (padrao comercial)
+## Como rodar
+
+1. Suba o backend primeiro (repositório da API).
+2. Instale as dependências do frontend.
+3. Rode o frontend.
+
+```bash
+npm install
+npm run dev
+```
+
+Frontend: http://localhost:3002
+
+## Scripts
+
+```bash
+npm run dev    # desenvolvimento em http://localhost:3002
+npm run lint   # lint
+npm run build  # build de produção
+npm run start  # serve build de produção
+```
+
+## Padrão de integração HTTP
+
+- Centralizar chamadas em src/lib/http.ts com apiFetch.
+- Evitar fetch direto nas features.
+- Em 401 com token presente: token é removido e usuário é redirecionado para /login.
+
+## Estrutura resumida
 
 ```text
 src/
-	app/                       # rotas e layout do Next.js
-	lib/                       # configuracao e utilitarios compartilhados
-	types/                     # contratos de tipos do dominio
-	features/
-		appointments/
-			api/                   # chamadas HTTP da feature
-			components/            # componentes da feature
-			index.ts               # ponto unico de exportacao
+	app/                # rotas e layout
+	components/         # UI e layout compartilhado
+	features/           # módulos por domínio (appointments, clients, services, bot, availability, auth)
+	hooks/              # hooks reutilizáveis
+	lib/                # config e utilitários de infraestrutura
+	providers/          # providers globais (auth, toast, etc.)
+	styles/             # estilos globais
+	types/              # contratos de tipos
 ```
 
-## Funcionalidade atual
+## Observações
 
-- Listagem de agendamentos.
-- Acao de cancelamento com confirmacao no frontend.
-- Atualizacao imediata do status para "Cancelado" apos sucesso.
-
-## Diretrizes
-
-- Evite usar `any`; prefira tipos em `src/types`.
-- Toda chamada HTTP nova deve passar por `src/lib/http.ts`.
-- Organize telas por feature para facilitar escalabilidade.
+- Projeto com textos e formatos focados em pt-BR.
+- Em desenvolvimento, o dev indicator do Next pode ser desativado em next.config.ts.
