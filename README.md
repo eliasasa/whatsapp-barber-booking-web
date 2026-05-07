@@ -83,29 +83,13 @@ Frontend: http://localhost:3002
 
 Visão do painel em desktop e mobile. As imagens estão em `public/assets/images`.
 
-<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; align-items:start">
+| Serviços — desktop | Agendamentos — mobile |
+| --- | --- |
+| ![](/assets/images/services.png) | ![](/assets/images/appointments-mobile.png) |
 
-	<figure style="margin:0">
-		<img src="/assets/images/services.png" alt="Serviços" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.45)" />
-		<figcaption style="font-size:13px; color:#999; margin-top:8px">Serviços — desktop</figcaption>
-	</figure>
-
-	<figure style="margin:0">
-		<img src="/assets/images/appointments-mobile.png" alt="Agendamentos mobile" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.45)" />
-		<figcaption style="font-size:13px; color:#999; margin-top:8px">Agendamentos — mobile</figcaption>
-	</figure>
-
-	<figure style="margin:0">
-		<img src="/assets/images/config-mobile.png" alt="Configurações mobile" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.45)" />
-		<figcaption style="font-size:13px; color:#999; margin-top:8px">Configurações — mobile</figcaption>
-	</figure>
-
-	<figure style="margin:0">
-		<img src="/assets/images/config-desktop.png" alt="Configurações desktop" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.45)" />
-		<figcaption style="font-size:13px; color:#999; margin-top:8px">Configurações — desktop</figcaption>
-	</figure>
-
-</div>
+| Configurações — mobile | Configurações — desktop |
+| --- | --- |
+| ![](/assets/images/config-mobile.png) | ![](/assets/images/config-desktop.png) |
 
 Observação: o Next.js serve arquivos estáticos colocados na pasta `public`, portanto as imagens ficarão acessíveis em `/assets/images/<nome>`.
 
