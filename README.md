@@ -79,25 +79,35 @@ npm run dev
 
 Frontend: http://localhost:3002
 
-## Scripts
+## Screenshots
 
-```bash
-npm run dev    # desenvolvimento em http://localhost:3002
-npm run lint   # lint
-npm run build  # build de produção
-npm run start  # serve build de produção
-```
+Visão do painel em desktop e mobile. As imagens estão em `public/assets/images`.
 
-## Padrão de integração HTTP
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; align-items:start">
 
-- Centralizar chamadas em src/lib/http.ts com apiFetch.
-- Evitar fetch direto nas features.
-- Em 401 com token presente: token é removido e usuário é redirecionado para /login.
+	<figure style="margin:0">
+		<img src="/assets/images/services.png" alt="Serviços" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.45)" />
+		<figcaption style="font-size:13px; color:#999; margin-top:8px">Serviços — desktop</figcaption>
+	</figure>
 
-## Estrutura resumida
+	<figure style="margin:0">
+		<img src="/assets/images/appointments-mobile.png" alt="Agendamentos mobile" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.45)" />
+		<figcaption style="font-size:13px; color:#999; margin-top:8px">Agendamentos — mobile</figcaption>
+	</figure>
 
-```text
-src/
+	<figure style="margin:0">
+		<img src="/assets/images/config-mobile.png" alt="Configurações mobile" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.45)" />
+		<figcaption style="font-size:13px; color:#999; margin-top:8px">Configurações — mobile</figcaption>
+	</figure>
+
+	<figure style="margin:0">
+		<img src="/assets/images/config-desktop.png" alt="Configurações desktop" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.45)" />
+		<figcaption style="font-size:13px; color:#999; margin-top:8px">Configurações — desktop</figcaption>
+	</figure>
+
+</div>
+
+Observação: o Next.js serve arquivos estáticos colocados na pasta `public`, portanto as imagens ficarão acessíveis em `/assets/images/<nome>`.
 	app/                # rotas e layout
 	components/         # UI e layout compartilhado
 	features/           # módulos por domínio (appointments, clients, services, bot, availability, auth)
@@ -116,3 +126,21 @@ src/
 ## Licença
 
 MIT. Veja [LICENSE](LICENSE).
+
+## Screenshots
+
+- Serviços (desktop):
+
+	![Serviços](/assets/images/services.png)
+
+- Agendamentos (mobile):
+
+	![Agendamentos - Mobile](/assets/images/appointments-mobile.png)
+
+- Configurações (mobile):
+
+	![Configurações - Mobile](/assets/images/config-mobile.png)
+
+- Configurações (desktop):
+
+	![Configurações - Desktop](/assets/images/config-desktop.png)
