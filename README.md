@@ -85,11 +85,11 @@ Visão do painel em desktop e mobile. As imagens estão em `public/assets/images
 
 | Serviços — desktop | Agendamentos — mobile |
 | --- | --- |
-| ![](/assets/images/services.png) | ![](/assets/images/appointments-mobile.png) |
+| ![](public/assets/images/services.png) | ![](public/assets/images/appointments-mobile.png) |
 
 | Configurações — mobile | Configurações — desktop |
 | --- | --- |
-| ![](/assets/images/config-mobile.png) | ![](/assets/images/config-desktop.png) |
+| ![](public/assets/images/config-mobile.png) | ![](public/assets/images/config-desktop.png) |
 
 Observação: o Next.js serve arquivos estáticos colocados na pasta `public`, portanto as imagens ficarão acessíveis em `/assets/images/<nome>`.
 
