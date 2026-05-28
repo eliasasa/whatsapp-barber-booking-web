@@ -31,7 +31,23 @@ export async function apiFetch<T>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
+  // Resolve absolute URL: if `url` is relative, prefix API_BASE_URL.
+  let requestUrl = url;
+  try {
+    // If it's not an absolute URL, prefix with API_BASE_URL
+    const isAbsolute = /^(https?:)?\/\//i.test(url);
+    if (!isAbsolute) {
+      // Import API_BASE_URL lazily to avoid module cycles
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { API_BASE_URL } = require("./config");
+      const base = API_BASE_URL?.replace(/\/$/, "") || "http://localhost:3000";
+      requestUrl = `${base.startsWith("http") ? base : "http://" + base}${url.startsWith("/") ? url : `/${url}`}`;
+    }
+  } catch {
+    requestUrl = url;
+  }
+
+  const response = await fetch(requestUrl, {
     ...init,
     headers,
   });

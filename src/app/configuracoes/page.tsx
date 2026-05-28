@@ -22,6 +22,7 @@ import {
   updateAvailability,
   updateAvailabilityBlock,
 } from "@/features/availability";
+import * as wahaApi from "@/features/waha/api";
 import type { AvailabilityBlock, AvailabilityItem } from "@/features/availability/types";
 import {
   WEEKDAY_OPTIONS,
@@ -477,6 +478,121 @@ function BlockByPhoneCard() {
         >
           Bloquear
         </Button>
+      </div>
+    </div>
+  );
+}
+
+function WahaSessionsCard() {
+  const { addToast } = useToast();
+  const [sessions, setSessions] = useState<
+    Array<{ name: string; status?: string; me?: { id?: string; pushName?: string } }>
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [actionId, setActionId] = useState<string | null>(null);
+
+  async function load() {
+    try {
+      setIsLoading(true);
+      const data = await wahaApi.listSessions();
+
+      // Expected shape: { sessions: [ { name, status, config, me, ... }, ... ] }
+      const items = Array.isArray(data?.sessions) ? data.sessions : Array.isArray(data) ? data : [];
+
+      const normalized = items.map((item: any) => ({
+        name: item?.name ?? item?.id ?? String(item),
+        status: item?.status ?? undefined,
+        me: item?.me ?? undefined,
+      }));
+
+      setSessions(normalized);
+    } catch (err) {
+      addToast({ title: "Erro ao listar sessões", description: "Não foi possível carregar sessões WAHA.", type: "error" });
+      setSessions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  async function handleAction(sessionName: string, fn: () => Promise<any>, successMsg: string) {
+    try {
+      setActionId(sessionName);
+      await fn();
+      addToast({ title: successMsg, type: "success" });
+      await load();
+    } catch (e) {
+      addToast({ title: "Erro", description: (e instanceof Error ? e.message : "Falha na operação"), type: "error" });
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  function openQr(sessionName: string) {
+    void (async () => {
+      try {
+        const res = await wahaApi.getSessionQr(sessionName);
+        if (!res) throw new Error("QR não retornado");
+        const maybe = typeof res === "string" ? res : res?.qr ?? res?.data;
+        const dataUrl = maybe.startsWith("data:") ? maybe : `data:image/png;base64,${maybe}`;
+        window.open(dataUrl, "_blank");
+      } catch (err) {
+        addToast({ title: "Erro ao buscar QR", description: (err instanceof Error ? err.message : "Falha"), type: "error" });
+      }
+    })();
+  }
+
+  async function showMe(sessionName: string) {
+    try {
+      const res = await wahaApi.getSessionMe(sessionName);
+      const number = typeof res === "string" ? res : res?.id ?? res?.number ?? JSON.stringify(res);
+      addToast({ title: `Conectado: ${number}`, type: "success" });
+    } catch {
+      addToast({ title: "Não autenticado", description: "Sessão não possui número autenticado.", type: "error" });
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) p-5 sm:p-6">
+      <div className="flex items-start gap-4">
+        <div className="flex-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">WAHA</p>
+          <p className="mt-2 text-sm text-(--color-text-secondary)">Gerencie sessões do WAHA (QR, start/stop/restart/logout/delete).</p>
+        </div>
+        <div>
+          <Button onClick={() => void load()} isLoading={isLoading}>Atualizar</Button>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {isLoading ? (
+          <div className="text-sm text-(--color-text-secondary)">Carregando sessões...</div>
+        ) : sessions.length === 0 ? (
+          <div className="text-sm text-(--color-text-secondary)">Nenhuma sessão encontrada.</div>
+        ) : (
+          sessions.map((s) => (
+            <div key={s.name} className="flex items-center gap-3 rounded-lg border border-(--color-border-soft) bg-(--color-bg-soft) px-3 py-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-(--color-text-primary)">{s.name}</p>
+                <p className="text-xs text-(--color-text-secondary)">
+                  Status: {s.status ?? "-"} {s.me?.pushName ? `• ${s.me.pushName}` : s.me?.id ? `• ${s.me.id}` : ""}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button size="sm" onClick={() => openQr(s.name)}>QR</Button>
+                <Button size="sm" onClick={() => void showMe(s.name)}>Me</Button>
+                <Button size="sm" onClick={() => void handleAction(s.name, () => wahaApi.startSession(s.name), 'Sessão iniciada')} isLoading={actionId === s.name}>Start</Button>
+                <Button size="sm" variant="outline" onClick={() => void handleAction(s.name, () => wahaApi.stopSession(s.name), 'Sessão parada')} isLoading={actionId === s.name}>Stop</Button>
+                <Button size="sm" variant="subtle" onClick={() => void handleAction(s.name, () => wahaApi.restartSession(s.name), 'Sessão reiniciada')} isLoading={actionId === s.name}>Restart</Button>
+                <Button size="sm" variant="danger" onClick={() => void handleAction(s.name, () => wahaApi.logoutSession(s.name), 'Logout executado')} isLoading={actionId === s.name}>Logout</Button>
+                <Button size="sm" variant="destructive" onClick={() => void handleAction(s.name, () => wahaApi.deleteSession(s.name), 'Sessão deletada')} isLoading={actionId === s.name}>Delete</Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -1278,6 +1394,10 @@ export default function ConfiguracoesPage() {
 
         <div className="reveal-up" style={{ animationDelay: "160ms" }}>
           <BlockByPhoneCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "180ms" }}>
+          <WahaSessionsCard />
         </div>
 
         <div className="mt-2 grid grid-cols-1 gap-5 xl:grid-cols-2">
