@@ -1241,6 +1241,28 @@ export default function ConfiguracoesPage() {
         </p>
       </div>
 
+      <div className="mt-4 surface-panel reveal-up px-6 py-4 sm:px-8 sm:py-6">
+        <p className="text-sm text-(--color-text-secondary)">Integrações</p>
+        <div className="mt-3 flex items-center gap-3">
+          <p className="text-sm text-(--color-text-primary) max-w-lg">Abra o dashboard do WAHA para gerenciar integrações do bot e filas.</p>
+          <div className="ml-auto">
+            <Button
+              onClick={() => {
+                const url = (process.env.NEXT_PUBLIC_WAHA_API_URL as string) || "http://localhost:3001";
+                try {
+                  window.open(url, "_blank");
+                } catch {
+                  // fallback
+                  window.location.href = url;
+                }
+              }}
+            >
+              Abrir WAHA Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div className="mt-6 grid grid-cols-1 gap-5">
         <div className="reveal-up" style={{ animationDelay: "40ms" }}>
           <BotStatusCard />
