@@ -1556,33 +1556,33 @@ export default function ConfiguracoesPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-5">
         <div className="reveal-up" style={{ animationDelay: "40ms" }}>
-          <BotStatusCard />
-        </div>
-
-        <div className="reveal-up" style={{ animationDelay: "80ms" }}>
-          <GreetingEditorCard />
-        </div>
-
-        <div className="reveal-up" style={{ animationDelay: "120ms" }}>
-          <BlockedClientsCard />
-        </div>
-
-        <div className="reveal-up" style={{ animationDelay: "160ms" }}>
-          <BlockByPhoneCard />
-        </div>
-
-        <div className="reveal-up" style={{ animationDelay: "180ms" }}>
           <WahaSessionsCard />
         </div>
 
+        <div className="reveal-up" style={{ animationDelay: "80ms" }}>
+          <BotStatusCard />
+        </div>
+
         <div className="mt-2 grid grid-cols-1 gap-5 xl:grid-cols-2">
-          <div className="reveal-up" style={{ animationDelay: "200ms" }}>
+          <div className="reveal-up" style={{ animationDelay: "120ms" }}>
             <WeeklyAvailabilityCard />
           </div>
 
-          <div className="reveal-up" style={{ animationDelay: "240ms" }}>
+          <div className="reveal-up" style={{ animationDelay: "160ms" }}>
             <AvailabilityBlocksCard />
           </div>
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "200ms" }}>
+          <GreetingEditorCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "240ms" }}>
+          <BlockedClientsCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "280ms" }}>
+          <BlockByPhoneCard />
         </div>
       </div>
     </section>
