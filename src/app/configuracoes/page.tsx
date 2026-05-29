@@ -490,6 +490,8 @@ function WahaSessionsCard() {
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrData, setQrData] = useState<string>("");
 
   const load = useCallback(async () => {
     try {
@@ -540,26 +542,17 @@ function WahaSessionsCard() {
         const qrValue = typeof res === "string" ? res : res?.value ?? res?.qr ?? res?.data;
         if (!qrValue) throw new Error("QR code não encontrado na resposta");
         
-        // Validate and convert to proper data URL
+        // Try to construct a valid data URL
         let dataUrl = "";
         if (qrValue.startsWith("data:")) {
           dataUrl = qrValue;
-        } else if (qrValue.includes(",")) {
-          // Likely a base64 with prefix already, ensure it's valid
-          const parts = qrValue.split(",");
-          dataUrl = parts.length > 1 ? `data:image/png;base64,${parts[parts.length - 1].trim()}` : `data:image/png;base64,${qrValue.trim()}`;
         } else {
-          // Plain base64 string
-          dataUrl = `data:image/png;base64,${qrValue.trim()}`;
+          // Try as SVG first, then PNG
+          dataUrl = `data:image/svg+xml;base64,${qrValue}`;
         }
         
-        const popup = window.open("", "QRCode", "width=500,height=500,resizable,scrollbars");
-        if (popup) {
-          popup.document.write(`<html><head><title>QR Code</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#f0f0f0}</style></head><body><img src="${dataUrl}" style="max-width:100%;max-height:100%"/></body></html>`);
-          popup.document.close();
-        } else {
-          throw new Error("Não foi possível abrir a janela do QR");
-        }
+        setQrData(dataUrl);
+        setQrModalOpen(true);
       } catch (err) {
         addToast({ title: "Erro ao buscar QR", description: (err instanceof Error ? err.message : "Falha"), type: "error" });
       }
@@ -683,6 +676,51 @@ function WahaSessionsCard() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* QR Modal */}
+      {qrModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="rounded-lg bg-white shadow-lg max-w-md w-full">
+            <div className="flex items-center justify-between border-b border-gray-200 p-4">
+              <h3 className="text-lg font-semibold text-gray-900">QR Code da Sessão</h3>
+              <button
+                onClick={() => setQrModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex flex-col items-center justify-center p-6 bg-gray-50">
+              {qrData && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={qrData}
+                  alt="QR Code"
+                  className="max-w-full h-auto"
+                  style={{ maxWidth: "100%", maxHeight: "100%" }}
+                />
+              )}
+            </div>
+            <div className="border-t border-gray-200 bg-white p-4 flex justify-end gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const link = document.createElement("a");
+                  link.href = qrData;
+                  link.download = "qr-code.png";
+                  link.click();
+                }}
+              >
+                Baixar
+              </Button>
+              <Button size="sm" onClick={() => setQrModalOpen(false)}>
+                Fechar
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
