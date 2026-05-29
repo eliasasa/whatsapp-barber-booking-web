@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
@@ -492,6 +493,9 @@ function WahaSessionsCard() {
   const [actionId, setActionId] = useState<string | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrData, setQrData] = useState<string>("");
+  const hasActiveSession = sessions.some(
+    (session) => session.status === "WORKING" || Boolean(session.me?.pushName || session.me?.id),
+  );
 
   const load = useCallback(async () => {
     try {
@@ -501,11 +505,31 @@ function WahaSessionsCard() {
       // Expected shape: { sessions: [ { name, status, config, me, ... }, ... ] }
       const items = Array.isArray(data?.sessions) ? data.sessions : Array.isArray(data) ? data : [];
 
-      const normalized = items.map((item: Record<string, unknown>) => ({
-        name: item?.name ?? item?.id ?? String(item),
-        status: item?.status ?? undefined,
-        me: item?.me ?? undefined,
-      }));
+      const normalized = items.map((item: Record<string, unknown>) => {
+        const rawName = item.name ?? item.id ?? String(item);
+        const rawStatus = item.status;
+        const rawMe = item.me;
+
+        const me =
+          rawMe && typeof rawMe === "object"
+            ? {
+                id:
+                  typeof (rawMe as { id?: unknown }).id === "string"
+                    ? (rawMe as { id?: string }).id
+                    : undefined,
+                pushName:
+                  typeof (rawMe as { pushName?: unknown }).pushName === "string"
+                    ? (rawMe as { pushName?: string }).pushName
+                    : undefined,
+              }
+            : undefined;
+
+        return {
+          name: typeof rawName === "string" ? rawName : String(rawName),
+          status: typeof rawStatus === "string" ? rawStatus : undefined,
+          me,
+        };
+      });
 
       setSessions(normalized);
     } catch {
@@ -534,24 +558,18 @@ function WahaSessionsCard() {
   }
 
   function openQr(sessionName: string) {
+    if (hasActiveSession) {
+      return;
+    }
+
     void (async () => {
       try {
         const res = await wahaApi.getSessionQr(sessionName);
         if (!res) throw new Error("QR não retornado");
-        // Handle response shapes: {value: "..."}, {qr: "..."}, {data: "..."}, or direct string
         const qrValue = typeof res === "string" ? res : res?.value ?? res?.qr ?? res?.data;
         if (!qrValue) throw new Error("QR code não encontrado na resposta");
-        
-        // Try to construct a valid data URL
-        let dataUrl = "";
-        if (qrValue.startsWith("data:")) {
-          dataUrl = qrValue;
-        } else {
-          // Try as SVG first, then PNG
-          dataUrl = `data:image/svg+xml;base64,${qrValue}`;
-        }
-        
-        setQrData(dataUrl);
+
+        setQrData(String(qrValue).trim());
         setQrModalOpen(true);
       } catch (err) {
         addToast({ title: "Erro ao buscar QR", description: (err instanceof Error ? err.message : "Falha"), type: "error" });
@@ -561,14 +579,19 @@ function WahaSessionsCard() {
 
   async function showMe(sessionName: string) {
     try {
-      const res = await wahaApi.getSessionMe(sessionName);
+      const res = (await wahaApi.getSessionMe(sessionName)) as unknown;
+
       // If response is empty string or falsy, it means the session is connected and healthy
       if (!res || res === "") {
         const session = sessions.find(s => s.name === sessionName);
         const displayName = session?.me?.pushName || session?.me?.id || sessionName;
         addToast({ title: "✓ Conectado", description: `Sessão '${displayName}' está ativa e respondendo`, type: "success" });
-      } else {
-        const number = typeof res === "string" ? res : res?.id ?? res?.number ?? JSON.stringify(res);
+      } else if (typeof res === "string") {
+        const number = res;
+        addToast({ title: `Conectado: ${number}`, type: "success" });
+      } else if (typeof res === "object" && res !== null) {
+        const payload = res as { id?: string; number?: string };
+        const number = payload.id ?? payload.number ?? JSON.stringify(res);
         addToast({ title: `Conectado: ${number}`, type: "success" });
       }
     } catch {
@@ -595,6 +618,11 @@ function WahaSessionsCard() {
       ) : (
         <div className="space-y-4">
           {sessions.map((s) => (
+            (() => {
+              const isConnected = s.status === "WORKING" || Boolean(s.me?.pushName || s.me?.id);
+              const statusLabel = s.status ?? "Desconhecido";
+
+              return (
             <div
               key={s.name}
               className="rounded-lg border border-(--color-border-soft) bg-(--color-bg-soft) p-4 transition-all hover:border-(--color-accent) hover:shadow-sm"
@@ -604,8 +632,8 @@ function WahaSessionsCard() {
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-3 mb-2">
                     <p className="text-base font-semibold text-(--color-text-primary) truncate">{s.name}</p>
-                    <span className="inline-flex items-center rounded-full bg-(--color-accent) bg-opacity-10 px-2.5 py-0.5 text-xs font-medium text-(--color-accent)">
-                      {s.status ?? "Desconhecido"}
+                    <span className="inline-flex items-center rounded-full border border-(--color-border-soft) bg-(--color-bg-card) px-2.5 py-0.5 text-xs font-semibold tracking-[0.04em] text-(--color-text-primary)">
+                      {statusLabel}
                     </span>
                   </div>
                   {(s.me?.pushName || s.me?.id) && (
@@ -616,20 +644,24 @@ function WahaSessionsCard() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openQr(s.name)}
-                    title="Exibir código QR para autenticação"
-                  >
-                    QR
-                  </Button>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-nowrap sm:items-stretch">
+                  {!hasActiveSession && !isConnected && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openQr(s.name)}
+                      title="Exibir código QR para autenticação"
+                      className="w-full sm:flex-1"
+                    >
+                      QR
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => void showMe(s.name)}
                     title="Verificar número autenticado"
+                    className="w-full sm:flex-1"
                   >
                     Info
                   </Button>
@@ -638,6 +670,7 @@ function WahaSessionsCard() {
                     onClick={() => void handleAction(s.name, () => wahaApi.startSession(s.name), "Sessão iniciada")}
                     isLoading={actionId === s.name}
                     title="Iniciar sessão"
+                    className="w-full sm:flex-1"
                   >
                     Iniciar
                   </Button>
@@ -647,6 +680,7 @@ function WahaSessionsCard() {
                     onClick={() => void handleAction(s.name, () => wahaApi.stopSession(s.name), "Sessão parada")}
                     isLoading={actionId === s.name}
                     title="Parar sessão"
+                    className="w-full sm:flex-1"
                   >
                     Parar
                   </Button>
@@ -656,6 +690,7 @@ function WahaSessionsCard() {
                     onClick={() => void handleAction(s.name, () => wahaApi.restartSession(s.name), "Sessão reiniciada")}
                     isLoading={actionId === s.name}
                     title="Reiniciar sessão"
+                    className="w-full sm:flex-1"
                   >
                     Reiniciar
                   </Button>
@@ -663,62 +698,71 @@ function WahaSessionsCard() {
               </div>
 
               {/* Logout Button - Secondary Row */}
-              <div className="mt-3 pt-3 border-t border-(--color-border-soft) flex justify-start">
+              <div className="mt-3 flex justify-start border-t border-(--color-border-soft) pt-3">
                 <Button
                   size="sm"
                   variant="danger"
                   onClick={() => void handleAction(s.name, () => wahaApi.logoutSession(s.name), "Logout executado")}
                   isLoading={actionId === s.name}
                   title="Fazer logout da sessão"
+                  className="w-full sm:w-auto"
                 >
                   Logout
                 </Button>
               </div>
             </div>
+              );
+            })()
           ))}
         </div>
       )}
 
-      {/* QR Modal */}
-      {qrModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="rounded-lg bg-white shadow-lg max-w-md w-full">
-            <div className="flex items-center justify-between border-b border-gray-200 p-4">
-              <h3 className="text-lg font-semibold text-gray-900">QR Code da Sessão</h3>
-              <button
-                onClick={() => setQrModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                ✕
-              </button>
+      {/* QR Preview Panel */}
+      {!hasActiveSession && qrModalOpen && (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-(--color-border-soft) bg-(--color-bg-soft) shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
+          <div className="flex items-center justify-between gap-3 border-b border-(--color-border-soft) bg-(--color-bg-card) px-4 py-3 sm:px-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">
+                WAHA
+              </p>
+              <h3 className="mt-1 text-base font-semibold text-(--color-text-primary)">QR Code da Sessão</h3>
             </div>
-            <div className="flex flex-col items-center justify-center p-6 bg-gray-50">
-              {qrData && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={qrData}
-                  alt="QR Code"
-                  className="max-w-full h-auto"
-                  style={{ maxWidth: "100%", maxHeight: "100%" }}
-                />
-              )}
+            <Button size="sm" variant="outline" onClick={() => setQrModalOpen(false)}>
+              Fechar
+            </Button>
+          </div>
+
+          <div className="grid gap-5 px-4 py-4 sm:px-5 lg:grid-cols-[auto_1fr] lg:items-center">
+            <div className="flex justify-center rounded-2xl border border-(--color-border-soft) bg-(--color-bg-card) p-5 shadow-sm">
+              {qrData ? <QRCodeSVG value={qrData} size={216} includeMargin /> : null}
             </div>
-            <div className="border-t border-gray-200 bg-white p-4 flex justify-end gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const link = document.createElement("a");
-                  link.href = qrData;
-                  link.download = "qr-code.png";
-                  link.click();
-                }}
-              >
-                Baixar
-              </Button>
-              <Button size="sm" onClick={() => setQrModalOpen(false)}>
-                Fechar
-              </Button>
+
+            <div className="space-y-4">
+              <div className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) p-4">
+                <p className="text-sm font-medium text-(--color-text-primary)">Escaneie para conectar</p>
+                <p className="mt-2 text-sm leading-6 text-(--color-text-secondary)">
+                  Abra o WhatsApp no celular e aponte a câmera para este QR.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const svg = document.querySelector("svg");
+                    if (!svg) return;
+                    const xml = new XMLSerializer().serializeToString(svg);
+                    const blob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = "qr-code.svg";
+                    link.click();
+                  }}
+                >
+                  Baixar QR
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -1488,9 +1532,11 @@ export default function ConfiguracoesPage() {
 
       <div className="mt-4 surface-panel reveal-up px-6 py-4 sm:px-8 sm:py-6">
         <p className="text-sm text-(--color-text-secondary)">Integrações</p>
-        <div className="mt-3 flex items-center gap-3">
-          <p className="text-sm text-(--color-text-primary) max-w-lg">Abra o dashboard do WAHA para gerenciar integrações do bot e filas.</p>
-          <div className="ml-auto">
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <p className="max-w-lg text-sm text-(--color-text-primary)">
+            Abra o dashboard do WAHA para gerenciar integrações do bot e filas.
+          </p>
+          <div className="sm:ml-auto">
             <Button
               onClick={() => {
                 const url = (process.env.NEXT_PUBLIC_WAHA_API_URL as string) || "http://localhost:3001";
