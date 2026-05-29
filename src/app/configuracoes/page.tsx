@@ -537,7 +537,7 @@ function WahaSessionsCard() {
         const res = await wahaApi.getSessionQr(sessionName);
         if (!res) throw new Error("QR não retornado");
         // Handle response shapes: {value: "..."}, {qr: "..."}, {data: "..."}, or direct string
-        let qrValue = typeof res === "string" ? res : res?.value ?? res?.qr ?? res?.data;
+        const qrValue = typeof res === "string" ? res : res?.value ?? res?.qr ?? res?.data;
         if (!qrValue) throw new Error("QR code não encontrado na resposta");
         
         // Validate and convert to proper data URL
