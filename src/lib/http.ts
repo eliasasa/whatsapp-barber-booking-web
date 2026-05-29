@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "./config";
+
 type RequestInitSafe = RequestInit & {
   next?: { revalidate?: number | false; tags?: string[] };
 };
@@ -37,11 +39,8 @@ export async function apiFetch<T>(
     // If it's not an absolute URL, prefix with API_BASE_URL
     const isAbsolute = /^(https?:)?\/\//i.test(url);
     if (!isAbsolute) {
-      // Import API_BASE_URL lazily to avoid module cycles
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { API_BASE_URL } = require("./config");
-      const base = API_BASE_URL?.replace(/\/$/, "") || "http://localhost:3000";
-      requestUrl = `${base.startsWith("http") ? base : "http://" + base}${url.startsWith("/") ? url : `/${url}`}`;
+      const base = API_BASE_URL.replace(/\/$/, "");
+      requestUrl = `${base}${url.startsWith("/") ? url : `/${url}`}`;
     }
   } catch {
     requestUrl = url;

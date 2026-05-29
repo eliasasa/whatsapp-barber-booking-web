@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
@@ -491,7 +491,7 @@ function WahaSessionsCard() {
   const [isLoading, setIsLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await wahaApi.listSessions();
@@ -499,26 +499,26 @@ function WahaSessionsCard() {
       // Expected shape: { sessions: [ { name, status, config, me, ... }, ... ] }
       const items = Array.isArray(data?.sessions) ? data.sessions : Array.isArray(data) ? data : [];
 
-      const normalized = items.map((item: any) => ({
+      const normalized = items.map((item: Record<string, unknown>) => ({
         name: item?.name ?? item?.id ?? String(item),
         status: item?.status ?? undefined,
         me: item?.me ?? undefined,
       }));
 
       setSessions(normalized);
-    } catch (err) {
+    } catch {
       addToast({ title: "Erro ao listar sessões", description: "Não foi possível carregar sessões WAHA.", type: "error" });
       setSessions([]);
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [addToast]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
-  async function handleAction(sessionName: string, fn: () => Promise<any>, successMsg: string) {
+  async function handleAction(sessionName: string, fn: () => Promise<Record<string, unknown>>, successMsg: string) {
     try {
       setActionId(sessionName);
       await fn();
