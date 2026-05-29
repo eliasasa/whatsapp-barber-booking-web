@@ -536,8 +536,10 @@ function WahaSessionsCard() {
       try {
         const res = await wahaApi.getSessionQr(sessionName);
         if (!res) throw new Error("QR não retornado");
-        const maybe = typeof res === "string" ? res : res?.qr ?? res?.data;
-        const dataUrl = maybe.startsWith("data:") ? maybe : `data:image/png;base64,${maybe}`;
+        // Handle response shapes: {value: "..."}, {qr: "..."}, {data: "..."}, or direct string
+        const qrValue = typeof res === "string" ? res : res?.value ?? res?.qr ?? res?.data;
+        if (!qrValue) throw new Error("QR code não encontrado na resposta");
+        const dataUrl = qrValue.startsWith("data:") ? qrValue : `data:image/png;base64,${qrValue}`;
         window.open(dataUrl, "_blank");
       } catch (err) {
         addToast({ title: "Erro ao buscar QR", description: (err instanceof Error ? err.message : "Falha"), type: "error" });
@@ -557,43 +559,107 @@ function WahaSessionsCard() {
 
   return (
     <div className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) p-5 sm:p-6">
-      <div className="flex items-start gap-4">
-        <div className="flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">WAHA</p>
-          <p className="mt-2 text-sm text-(--color-text-secondary)">Gerencie sessões do WAHA (QR, start/stop/restart/logout/delete).</p>
-        </div>
+      <div className="flex items-start justify-between gap-4 mb-5">
         <div>
-          <Button onClick={() => void load()} isLoading={isLoading}>Atualizar</Button>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">WhatsApp Hub</p>
+          <p className="mt-2 text-sm text-(--color-text-secondary)">Gerencie suas sessões do WhatsApp</p>
         </div>
+        <Button onClick={() => void load()} isLoading={isLoading} size="sm">
+          Atualizar
+        </Button>
       </div>
 
-      <div className="mt-4 space-y-3">
-        {isLoading ? (
-          <div className="text-sm text-(--color-text-secondary)">Carregando sessões...</div>
-        ) : sessions.length === 0 ? (
-          <div className="text-sm text-(--color-text-secondary)">Nenhuma sessão encontrada.</div>
-        ) : (
-          sessions.map((s) => (
-            <div key={s.name} className="flex items-center gap-3 rounded-lg border border-(--color-border-soft) bg-(--color-bg-soft) px-3 py-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-(--color-text-primary)">{s.name}</p>
-                <p className="text-xs text-(--color-text-secondary)">
-                  Status: {s.status ?? "-"} {s.me?.pushName ? `• ${s.me.pushName}` : s.me?.id ? `• ${s.me.id}` : ""}
-                </p>
+      {isLoading ? (
+        <div className="py-8 text-center text-sm text-(--color-text-secondary)">Carregando sessões...</div>
+      ) : sessions.length === 0 ? (
+        <div className="py-8 text-center text-sm text-(--color-text-secondary)">Nenhuma sessão encontrada</div>
+      ) : (
+        <div className="space-y-4">
+          {sessions.map((s) => (
+            <div
+              key={s.name}
+              className="rounded-lg border border-(--color-border-soft) bg-(--color-bg-soft) p-4 transition-all hover:border-(--color-accent) hover:shadow-sm"
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto]">
+                {/* Session Info */}
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-3 mb-2">
+                    <p className="text-base font-semibold text-(--color-text-primary) truncate">{s.name}</p>
+                    <span className="inline-flex items-center rounded-full bg-(--color-accent) bg-opacity-10 px-2.5 py-0.5 text-xs font-medium text-(--color-accent)">
+                      {s.status ?? "Desconhecido"}
+                    </span>
+                  </div>
+                  {(s.me?.pushName || s.me?.id) && (
+                    <p className="text-sm text-(--color-text-secondary)">
+                      📱 {s.me.pushName || s.me.id}
+                    </p>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openQr(s.name)}
+                    title="Exibir código QR para autenticação"
+                  >
+                    QR
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void showMe(s.name)}
+                    title="Verificar número autenticado"
+                  >
+                    Info
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => void handleAction(s.name, () => wahaApi.startSession(s.name), "Sessão iniciada")}
+                    isLoading={actionId === s.name}
+                    title="Iniciar sessão"
+                  >
+                    Iniciar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="subtle"
+                    onClick={() => void handleAction(s.name, () => wahaApi.stopSession(s.name), "Sessão parada")}
+                    isLoading={actionId === s.name}
+                    title="Parar sessão"
+                  >
+                    Parar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void handleAction(s.name, () => wahaApi.restartSession(s.name), "Sessão reiniciada")}
+                    isLoading={actionId === s.name}
+                    title="Reiniciar sessão"
+                  >
+                    Reiniciar
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2 flex-wrap">
-                <Button size="sm" onClick={() => openQr(s.name)}>QR</Button>
-                <Button size="sm" onClick={() => void showMe(s.name)}>Me</Button>
-                <Button size="sm" onClick={() => void handleAction(s.name, () => wahaApi.startSession(s.name), 'Sessão iniciada')} isLoading={actionId === s.name}>Start</Button>
-                <Button size="sm" variant="outline" onClick={() => void handleAction(s.name, () => wahaApi.stopSession(s.name), 'Sessão parada')} isLoading={actionId === s.name}>Stop</Button>
-                <Button size="sm" variant="subtle" onClick={() => void handleAction(s.name, () => wahaApi.restartSession(s.name), 'Sessão reiniciada')} isLoading={actionId === s.name}>Restart</Button>
-                <Button size="sm" variant="danger" onClick={() => void handleAction(s.name, () => wahaApi.logoutSession(s.name), 'Logout executado')} isLoading={actionId === s.name}>Logout</Button>
-                <Button size="sm" variant="destructive" onClick={() => void handleAction(s.name, () => wahaApi.deleteSession(s.name), 'Sessão deletada')} isLoading={actionId === s.name}>Delete</Button>
+
+              {/* Logout Button - Secondary Row */}
+              <div className="mt-3 pt-3 border-t border-(--color-border-soft)">
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => void handleAction(s.name, () => wahaApi.logoutSession(s.name), "Logout executado")}
+                  isLoading={actionId === s.name}
+                  className="w-full"
+                  title="Fazer logout da sessão"
+                >
+                  Fazer Logout
+                </Button>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
