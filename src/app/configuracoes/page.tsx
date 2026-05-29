@@ -537,10 +537,29 @@ function WahaSessionsCard() {
         const res = await wahaApi.getSessionQr(sessionName);
         if (!res) throw new Error("QR não retornado");
         // Handle response shapes: {value: "..."}, {qr: "..."}, {data: "..."}, or direct string
-        const qrValue = typeof res === "string" ? res : res?.value ?? res?.qr ?? res?.data;
+        let qrValue = typeof res === "string" ? res : res?.value ?? res?.qr ?? res?.data;
         if (!qrValue) throw new Error("QR code não encontrado na resposta");
-        const dataUrl = qrValue.startsWith("data:") ? qrValue : `data:image/png;base64,${qrValue}`;
-        window.open(dataUrl, "_blank");
+        
+        // Validate and convert to proper data URL
+        let dataUrl = "";
+        if (qrValue.startsWith("data:")) {
+          dataUrl = qrValue;
+        } else if (qrValue.includes(",")) {
+          // Likely a base64 with prefix already, ensure it's valid
+          const parts = qrValue.split(",");
+          dataUrl = parts.length > 1 ? `data:image/png;base64,${parts[parts.length - 1].trim()}` : `data:image/png;base64,${qrValue.trim()}`;
+        } else {
+          // Plain base64 string
+          dataUrl = `data:image/png;base64,${qrValue.trim()}`;
+        }
+        
+        const popup = window.open("", "QRCode", "width=500,height=500,resizable,scrollbars");
+        if (popup) {
+          popup.document.write(`<html><head><title>QR Code</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#f0f0f0}</style></head><body><img src="${dataUrl}" style="max-width:100%;max-height:100%"/></body></html>`);
+          popup.document.close();
+        } else {
+          throw new Error("Não foi possível abrir a janela do QR");
+        }
       } catch (err) {
         addToast({ title: "Erro ao buscar QR", description: (err instanceof Error ? err.message : "Falha"), type: "error" });
       }
@@ -550,10 +569,17 @@ function WahaSessionsCard() {
   async function showMe(sessionName: string) {
     try {
       const res = await wahaApi.getSessionMe(sessionName);
-      const number = typeof res === "string" ? res : res?.id ?? res?.number ?? JSON.stringify(res);
-      addToast({ title: `Conectado: ${number}`, type: "success" });
+      // If response is empty string or falsy, it means the session is connected and healthy
+      if (!res || res === "") {
+        const session = sessions.find(s => s.name === sessionName);
+        const displayName = session?.me?.pushName || session?.me?.id || sessionName;
+        addToast({ title: "✓ Conectado", description: `Sessão '${displayName}' está ativa e respondendo`, type: "success" });
+      } else {
+        const number = typeof res === "string" ? res : res?.id ?? res?.number ?? JSON.stringify(res);
+        addToast({ title: `Conectado: ${number}`, type: "success" });
+      }
     } catch {
-      addToast({ title: "Não autenticado", description: "Sessão não possui número autenticado.", type: "error" });
+      addToast({ title: "Erro ao verificar", description: "Não foi possível verificar a sessão", type: "error" });
     }
   }
 
@@ -644,16 +670,15 @@ function WahaSessionsCard() {
               </div>
 
               {/* Logout Button - Secondary Row */}
-              <div className="mt-3 pt-3 border-t border-(--color-border-soft)">
+              <div className="mt-3 pt-3 border-t border-(--color-border-soft) flex justify-start">
                 <Button
                   size="sm"
                   variant="danger"
                   onClick={() => void handleAction(s.name, () => wahaApi.logoutSession(s.name), "Logout executado")}
                   isLoading={actionId === s.name}
-                  className="w-full"
                   title="Fazer logout da sessão"
                 >
-                  Fazer Logout
+                  Logout
                 </Button>
               </div>
             </div>
