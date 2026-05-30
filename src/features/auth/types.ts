@@ -27,15 +27,6 @@ export type UpdateCredentialsPayload = {
   currentPassword: string;
 };
 
-export type ResetPasswordRequestPayload = {
-  email: string;
-};
-
-export type ResetPasswordPayload = {
-  token: string;
-  password: string;
-};
-
 export type MeResponse = {
   user: AuthUser;
 };
