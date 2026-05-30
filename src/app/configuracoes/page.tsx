@@ -5,6 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
+import { useAuth } from "@/providers/AuthProvider";
 import {
   getBotState,
   getGreetingMessage,
@@ -299,6 +300,213 @@ function GreetingEditorCard() {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AdminCredentialsCard() {
+  const { addToast } = useToast();
+  const { user, updateCredentials } = useAuth();
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (user?.email) {
+      setEmail(user.email);
+    }
+  }, [user?.email]);
+
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const normalizedEmail = email.trim();
+    const normalizedCurrentPassword = currentPassword.trim();
+    const normalizedPassword = password.trim();
+    const normalizedConfirmPassword = confirmPassword.trim();
+    const isChangingPassword = normalizedPassword.length > 0 || normalizedConfirmPassword.length > 0;
+
+    if (!normalizedEmail) {
+      addToast({ title: "Email obrigatório", description: "Informe o email do administrador.", type: "error" });
+      return;
+    }
+
+    if (!normalizedCurrentPassword) {
+      addToast({
+        title: "Senha atual obrigatória",
+        description: "Informe sua senha atual para confirmar a alteração.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (isChangingPassword && normalizedPassword.length < 8) {
+      addToast({
+        title: "Senha fraca",
+        description: "A nova senha precisa ter pelo menos 8 caracteres.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (isChangingPassword && normalizedPassword !== normalizedConfirmPassword) {
+      addToast({
+        title: "Confirmação inválida",
+        description: "A confirmação da nova senha não confere.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await updateCredentials({
+        email: normalizedEmail,
+        currentPassword: normalizedCurrentPassword,
+        password: isChangingPassword ? normalizedPassword : undefined,
+      });
+      setEmail(normalizedEmail);
+      setCurrentPassword("");
+      setPassword("");
+      setConfirmPassword("");
+      addToast({
+        title: "Credenciais atualizadas",
+        description: isChangingPassword
+          ? "Email, senha e sessão foram atualizados com sucesso."
+          : "Email e sessão foram atualizados com sucesso.",
+        type: "success",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message.replace(/^API error \(\d+\):\s*/i, "").trim() : "";
+
+      const feedback =
+        message === "Email invalido"
+          ? {
+              title: "Email inválido",
+              description: "Verifique o formato do email informado.",
+            }
+          : message === "Senha invalida"
+            ? {
+                title: "Senha inválida",
+                description: "A nova senha não atende aos requisitos esperados.",
+              }
+            : message === "Senha deve ter pelo menos 8 caracteres"
+              ? {
+                  title: "Senha muito curta",
+                  description: "A nova senha precisa ter pelo menos 8 caracteres.",
+                }
+              : message === "Senha atual invalida"
+                ? {
+                    title: "Senha atual inválida",
+                    description: "Confirme sua senha atual e tente novamente.",
+                  }
+                : message === "Email ja em uso"
+                  ? {
+                      title: "Email já em uso",
+                      description: "Escolha outro email para o administrador.",
+                    }
+                  : {
+                      title: "Erro ao atualizar credenciais",
+                      description: message || "Tente novamente em instantes.",
+                    };
+
+      addToast({
+        title: feedback.title,
+        description: feedback.description,
+        type: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) p-5 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">
+            Conta do administrador
+          </p>
+          <p className="mt-2 text-sm text-(--color-text-secondary)">
+            Atualize o email e, se necessário, a senha de acesso ao painel.
+          </p>
+        </div>
+
+        <span className="inline-flex items-center rounded-full border border-(--color-border-soft) bg-(--color-bg-soft) px-3 py-1 text-xs font-semibold text-(--color-text-secondary)">
+          {user?.email ?? "Sem email"}
+        </span>
+      </div>
+
+      <form onSubmit={handleSave} className="mt-5 space-y-4">
+        <div>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+            Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-disabled) focus:border-(--color-accent)"
+            placeholder="novo@email.com"
+          />
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-3">
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+              Senha atual
+            </label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-disabled) focus:border-(--color-accent)"
+              placeholder="senha atual"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+              Nova senha
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-disabled) focus:border-(--color-accent)"
+              placeholder="mínimo 8 caracteres"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)">
+              Confirmar nova senha
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className="w-full rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-disabled) focus:border-(--color-accent)"
+              placeholder="repita a nova senha"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-(--color-border-soft) pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-(--color-text-disabled)">
+            Para trocar só o email, deixe os campos de senha em branco. Para trocar a senha, preencha os três campos.
+          </p>
+          <Button
+            type="submit"
+            isLoading={isSaving}
+            disabled={!email.trim() || !currentPassword.trim()}
+          >
+            Salvar credenciais
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -1556,32 +1764,36 @@ export default function ConfiguracoesPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-5">
         <div className="reveal-up" style={{ animationDelay: "40ms" }}>
-          <WahaSessionsCard />
+          <AdminCredentialsCard />
         </div>
 
         <div className="reveal-up" style={{ animationDelay: "80ms" }}>
+          <WahaSessionsCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "120ms" }}>
           <BotStatusCard />
         </div>
 
         <div className="mt-2 grid grid-cols-1 gap-5 xl:grid-cols-2">
-          <div className="reveal-up" style={{ animationDelay: "120ms" }}>
+          <div className="reveal-up" style={{ animationDelay: "160ms" }}>
             <WeeklyAvailabilityCard />
           </div>
 
-          <div className="reveal-up" style={{ animationDelay: "160ms" }}>
+          <div className="reveal-up" style={{ animationDelay: "200ms" }}>
             <AvailabilityBlocksCard />
           </div>
         </div>
 
-        <div className="reveal-up" style={{ animationDelay: "200ms" }}>
+        <div className="reveal-up" style={{ animationDelay: "240ms" }}>
           <GreetingEditorCard />
         </div>
 
-        <div className="reveal-up" style={{ animationDelay: "240ms" }}>
+        <div className="reveal-up" style={{ animationDelay: "280ms" }}>
           <BlockedClientsCard />
         </div>
 
-        <div className="reveal-up" style={{ animationDelay: "280ms" }}>
+        <div className="reveal-up" style={{ animationDelay: "320ms" }}>
           <BlockByPhoneCard />
         </div>
       </div>

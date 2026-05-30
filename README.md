@@ -32,6 +32,7 @@ https://github.com/eliasasa/whatsapp-barber-booking
 - Campo de endereço no fluxo de agendamento.
 - CRUD de clientes.
 - CRUD de serviços, incluindo pausa/reativação.
+- Atualização de credenciais: troca de email apenas ou email + senha com `PATCH /auth/email` e `PATCH /auth/credentials`.
 - Configurações operacionais: status do bot (pausar/retomar), reinício do bot, mensagem de boas-vindas, agenda semanal de disponibilidade, bloqueios de agenda e clientes bloqueados.
 - Modais de confirmação via portal para cobrir a tela inteira.
 - Navbar oculta na rota de login.

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import type { AuthUser } from "@/features/auth";
-import { getMe, login } from "@/features/auth";
+import { getMe, login, updateCredentials as updateAuthCredentials, updateEmail } from "@/features/auth";
 
 const TOKEN_KEY = "auth_token";
 
@@ -12,6 +12,7 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  updateCredentials: (payload: { email: string; currentPassword: string; password?: string }) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<boolean>;
 };
@@ -54,8 +55,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await login({ email, password });
       const newToken = response.token;
+      const sessionUser = extractSessionUser(response);
 
-      setUser(response.user);
+      setUser(sessionUser);
+      setToken(newToken);
+      localStorage.setItem(TOKEN_KEY, newToken);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  function extractSessionUser(response: { user?: AuthUser; admin?: AuthUser }): AuthUser | null {
+    return response.user ?? response.admin ?? null;
+  }
+
+  async function handleUpdateCredentials({ email, password, currentPassword }: { email: string; currentPassword: string; password?: string }) {
+    try {
+      const response = password
+        ? await updateAuthCredentials({ email, password, currentPassword })
+        : await updateEmail({ email, currentPassword });
+      const newToken = response.token;
+      const sessionUser = extractSessionUser(response);
+
+      setUser(sessionUser);
       setToken(newToken);
       localStorage.setItem(TOKEN_KEY, newToken);
     } catch (error) {
@@ -94,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isAuthenticated: !!user && !!token,
     login: handleLogin,
+    updateCredentials: handleUpdateCredentials,
     logout: handleLogout,
     checkAuth,
   };

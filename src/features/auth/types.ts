@@ -12,7 +12,19 @@ export type LoginPayload = {
 
 export type AuthResponse = {
   token: string;
-  user: AuthUser;
+  user?: AuthUser;
+  admin?: AuthUser;
+};
+
+export type UpdateEmailPayload = {
+  email: string;
+  currentPassword: string;
+};
+
+export type UpdateCredentialsPayload = {
+  email: string;
+  password: string;
+  currentPassword: string;
 };
 
 export type MeResponse = {

@@ -4,6 +4,10 @@ type RequestInitSafe = RequestInit & {
   next?: { revalidate?: number | false; tags?: string[] };
 };
 
+type ApiFetchOptions = RequestInitSafe & {
+  skipUnauthorizedRedirect?: boolean;
+};
+
 function getAuthToken(): string | null {
   // Only runs in client environment
   if (typeof window === "undefined") {
@@ -19,7 +23,7 @@ function getAuthToken(): string | null {
 
 export async function apiFetch<T>(
   url: string,
-  init?: RequestInitSafe,
+  init?: ApiFetchOptions,
 ): Promise<T> {
   const token = getAuthToken();
   const headers: Record<string, string> = {
@@ -54,7 +58,7 @@ export async function apiFetch<T>(
   const responseBody = await response.text();
 
   if (!response.ok) {
-    if (response.status === 401 && token && typeof window !== "undefined") {
+    if (response.status === 401 && token && typeof window !== "undefined" && !init?.skipUnauthorizedRedirect) {
       localStorage.removeItem("auth_token");
       window.location.assign("/login");
     }
