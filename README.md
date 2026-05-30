@@ -27,6 +27,7 @@ https://github.com/eliasasa/whatsapp-barber-booking
 - Rotas protegidas com redirecionamento automático para /login quando necessário.
 - Injeção automática de Authorization Bearer Token nas chamadas HTTP.
 - Tratamento centralizado de erro de API e respostas vazias (ex.: DELETE/204).
+- Recuperação de senha via link de reset (Esqueci a senha).
 - Listagem, busca, filtro e cancelamento de agendamentos.
 - Criação e edição de agendamentos com validação de disponibilidade e bloqueios.
 - Campo de endereço no fluxo de agendamento.

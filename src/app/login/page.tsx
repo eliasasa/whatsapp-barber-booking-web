@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -133,6 +134,16 @@ export default function LoginPage() {
               disabled={isSubmitting}
               className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-3 text-(--color-text-primary) outline-none transition-colors placeholder:text-(--color-text-secondary) focus:border-(--color-accent) focus:bg-(--color-bg-card) disabled:opacity-50 disabled:cursor-not-allowed"
             />
+          </div>
+
+          {/* Forgot Password Link */}
+          <div className="text-right">
+            <Link
+              href="/reset-password"
+              className="text-xs text-(--color-accent) hover:text-[#C19B2E] transition-colors font-medium"
+            >
+              Esqueci minha senha
+            </Link>
           </div>
 
           {/* Submit Button */}
