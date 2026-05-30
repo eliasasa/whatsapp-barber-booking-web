@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import type { AuthUser } from "@/features/auth";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import type { AuthUser, MeResponse } from "@/features/auth";
 import { getMe, login, updateCredentials as updateAuthCredentials, updateEmail } from "@/features/auth";
 
 const TOKEN_KEY = "auth_token";
@@ -25,21 +25,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Initialize token from localStorage
-  useEffect(() => {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    if (storedToken) {
-      setToken(storedToken);
-      // Verify token validity
-      verifyToken(storedToken);
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
-
-  async function verifyToken(tokenToVerify: string) {
+  const verifyToken = useCallback(async (tokenToVerify: string) => {
     try {
       const response = await getMe(tokenToVerify);
-      setUser(response.user);
+      const sessionUser = extractSessionUser(response as MeResponse);
+      setUser(sessionUser);
       setToken(tokenToVerify);
     } catch {
       // Token invalid or expired
@@ -49,7 +39,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    if (storedToken) {
+      setToken(storedToken);
+      // Verify token validity
+      void verifyToken(storedToken);
+    } else {
+      setIsLoading(false);
+    }
+  }, [verifyToken]);
 
   async function handleLogin(email: string, password: string) {
     try {
@@ -99,7 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const response = await getMe(currentToken);
-      setUser(response.user);
+      const sessionUser = extractSessionUser(response as MeResponse);
+      setUser(sessionUser);
       setToken(currentToken);
       return true;
     } catch {

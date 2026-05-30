@@ -28,5 +28,6 @@ export type UpdateCredentialsPayload = {
 };
 
 export type MeResponse = {
-  user: AuthUser;
+  user?: AuthUser;
+  admin?: AuthUser;
 };
