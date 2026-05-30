@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/layouts/navbar/Navbar";
 
-const PUBLIC_ROUTES = ["/login"];
+const PUBLIC_ROUTES = ["/login", "/reset-password"];
 
 export function ProtectedRouteWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
