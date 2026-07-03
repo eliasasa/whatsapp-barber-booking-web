@@ -763,7 +763,28 @@ function WahaSessionsCard() {
       addToast({ title: successMsg, type: "success" });
       await load();
     } catch (e) {
-      addToast({ title: "Erro", description: (e instanceof Error ? e.message : "Falha na operação"), type: "error" });
+      const errorMsg = e instanceof Error ? e.message : "Falha na operação";
+      
+      // Handle specific error patterns
+      if (errorMsg.includes("422") || errorMsg.includes("already started")) {
+        addToast({
+          title: "Sessão já está em uso",
+          description: "Esta ação não pode ser executada no estado atual. Tente parar ou reiniciar.",
+          type: "error",
+        });
+      } else if (errorMsg.includes("FAILED") || errorMsg.includes("status is not as expected")) {
+        addToast({
+          title: "Sessão em estado inválido",
+          description: "Tente reiniciar a sessão.",
+          type: "error",
+        });
+      } else {
+        addToast({
+          title: "Erro",
+          description: errorMsg,
+          type: "error",
+        });
+      }
     } finally {
       setActionId(null);
     }
@@ -780,7 +801,22 @@ function WahaSessionsCard() {
         setQrData(String(qrValue).trim());
         setQrModalOpen(true);
       } catch (err) {
-        addToast({ title: "Erro ao buscar QR", description: (err instanceof Error ? err.message : "Falha"), type: "error" });
+        const errorMsg = err instanceof Error ? err.message : "Falha";
+        
+        // Check if session is in FAILED state
+        if (errorMsg.includes("FAILED") || errorMsg.includes("status is not as expected")) {
+          addToast({
+            title: "Sessão em estado inválido",
+            description: "A sessão está com erro. Tente reiniciar.",
+            type: "error",
+          });
+        } else {
+          addToast({
+            title: "Erro ao buscar QR",
+            description: errorMsg,
+            type: "error",
+          });
+        }
       }
     })();
   }
