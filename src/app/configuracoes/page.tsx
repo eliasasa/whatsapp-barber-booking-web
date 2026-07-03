@@ -694,6 +694,7 @@ function BlockByPhoneCard() {
 
 function WahaSessionsCard() {
   const { addToast } = useToast();
+  const { isAuthenticated } = useAuth();
   const [sessions, setSessions] = useState<
     Array<{ name: string; status?: string; me?: { id?: string; pushName?: string } }>
   >([]);
@@ -705,7 +706,13 @@ function WahaSessionsCard() {
     (session) => session.status === "WORKING" || Boolean(session.me?.pushName || session.me?.id),
   );
 
+  // Only load sessions if authenticated
   const load = useCallback(async () => {
+    if (!isAuthenticated) {
+      setSessions([]);
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       const data = await wahaApi.listSessions();
@@ -746,7 +753,7 @@ function WahaSessionsCard() {
     } finally {
       setIsLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, isAuthenticated]);
 
   useEffect(() => {
     void load();
@@ -809,21 +816,27 @@ function WahaSessionsCard() {
 
   return (
     <div className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">WhatsApp Hub</p>
-          <p className="mt-2 text-sm text-(--color-text-secondary)">Gerencie suas sessões do WhatsApp</p>
+      {!isAuthenticated ? (
+        <div className="py-8 text-center text-sm text-(--color-text-secondary)">
+          Faça login para gerenciar sessões
         </div>
-        <Button onClick={() => void load()} isLoading={isLoading} size="sm">
-          Atualizar
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <div className="py-8 text-center text-sm text-(--color-text-secondary)">Carregando sessões...</div>
-      ) : sessions.length === 0 ? (
-        <div className="py-8 text-center text-sm text-(--color-text-secondary)">Nenhuma sessão encontrada</div>
       ) : (
+        <>
+          <div className="flex items-start justify-between gap-4 mb-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">WhatsApp Hub</p>
+              <p className="mt-2 text-sm text-(--color-text-secondary)">Gerencie suas sessões do WhatsApp</p>
+            </div>
+            <Button onClick={() => void load()} isLoading={isLoading} size="sm">
+              Atualizar
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="py-8 text-center text-sm text-(--color-text-secondary)">Carregando sessões...</div>
+          ) : sessions.length === 0 ? (
+            <div className="py-8 text-center text-sm text-(--color-text-secondary)">Nenhuma sessão encontrada</div>
+          ) : (
         <div className="space-y-4">
           {sessions.map((s) => (
             (() => {
@@ -974,6 +987,8 @@ function WahaSessionsCard() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
