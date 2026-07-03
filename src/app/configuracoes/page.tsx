@@ -702,9 +702,6 @@ function WahaSessionsCard() {
   const [actionId, setActionId] = useState<string | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrData, setQrData] = useState<string>("");
-  const hasActiveSession = sessions.some(
-    (session) => session.status === "WORKING" || Boolean(session.me?.pushName || session.me?.id),
-  );
 
   // Only load sessions if authenticated
   const load = useCallback(async () => {
@@ -773,10 +770,6 @@ function WahaSessionsCard() {
   }
 
   function openQr(sessionName: string) {
-    if (hasActiveSession) {
-      return;
-    }
-
     void (async () => {
       try {
         const res = await wahaApi.getSessionQr(sessionName);
@@ -866,7 +859,7 @@ function WahaSessionsCard() {
 
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-nowrap sm:items-stretch">
-                  {!hasActiveSession && !isConnected && (
+                  {!isConnected && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -886,51 +879,59 @@ function WahaSessionsCard() {
                   >
                     Info
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => void handleAction(s.name, () => wahaApi.startSession(s.name), "Sessão iniciada")}
-                    isLoading={actionId === s.name}
-                    title="Iniciar sessão"
-                    className="w-full sm:flex-1"
-                  >
-                    Iniciar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="subtle"
-                    onClick={() => void handleAction(s.name, () => wahaApi.stopSession(s.name), "Sessão parada")}
-                    isLoading={actionId === s.name}
-                    title="Parar sessão"
-                    className="w-full sm:flex-1"
-                  >
-                    Parar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void handleAction(s.name, () => wahaApi.restartSession(s.name), "Sessão reiniciada")}
-                    isLoading={actionId === s.name}
-                    title="Reiniciar sessão"
-                    className="w-full sm:flex-1"
-                  >
-                    Reiniciar
-                  </Button>
+                  {!isConnected && (
+                    <Button
+                      size="sm"
+                      onClick={() => void handleAction(s.name, () => wahaApi.startSession(s.name), "Sessão iniciada")}
+                      isLoading={actionId === s.name}
+                      title="Iniciar sessão"
+                      className="w-full sm:flex-1"
+                    >
+                      Iniciar
+                    </Button>
+                  )}
+                  {isConnected && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="subtle"
+                        onClick={() => void handleAction(s.name, () => wahaApi.stopSession(s.name), "Sessão parada")}
+                        isLoading={actionId === s.name}
+                        title="Parar sessão"
+                        className="w-full sm:flex-1"
+                      >
+                        Parar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handleAction(s.name, () => wahaApi.restartSession(s.name), "Sessão reiniciada")}
+                        isLoading={actionId === s.name}
+                        title="Reiniciar sessão"
+                        className="w-full sm:flex-1"
+                      >
+                        Reiniciar
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
               {/* Logout Button - Secondary Row */}
-              <div className="mt-3 flex justify-start border-t border-(--color-border-soft) pt-3">
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => void handleAction(s.name, () => wahaApi.logoutSession(s.name), "Logout executado")}
-                  isLoading={actionId === s.name}
-                  title="Fazer logout da sessão"
-                  className="w-full sm:w-auto"
-                >
+              {isConnected && (
+                <div className="mt-3 flex justify-start border-t border-(--color-border-soft) pt-3">
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() => void handleAction(s.name, () => wahaApi.logoutSession(s.name), "Logout executado")}
+                    isLoading={actionId === s.name}
+                    title="Fazer logout da sessão"
+                    className="w-full sm:w-auto"
+                  >
                   Logout
                 </Button>
               </div>
+              )}
             </div>
               );
             })()
@@ -939,7 +940,7 @@ function WahaSessionsCard() {
       )}
 
       {/* QR Preview Panel */}
-      {!hasActiveSession && qrModalOpen && (
+      {qrModalOpen && (
         <div className="mt-4 overflow-hidden rounded-2xl border border-(--color-border-soft) bg-(--color-bg-soft) shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
           <div className="flex items-center justify-between gap-3 border-b border-(--color-border-soft) bg-(--color-bg-card) px-4 py-3 sm:px-5">
             <div>
