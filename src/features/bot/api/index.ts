@@ -4,3 +4,5 @@ export { getBotState } from "./getBotState";
 export { setBotState } from "./setBotState";
 export { restartBot } from "./restartBot";
 export type { BotState } from "./getBotState";
+export { getServiceType } from "./getServiceType";
+export { setServiceType } from "./setServiceType";

@@ -330,6 +330,13 @@ export function AppointmentsList() {
                     <span className="text-xs text-(--color-text-secondary)">
                       {isToday ? "Hoje" : formatAppointmentDate(appointmentDate)}
                     </span>
+
+                    {appointment.address && (
+                      <div className="mt-2 text-xs text-(--color-text-secondary)">
+                        📍 {appointment.address}
+                      </div>
+                    )}
+                    
                   </div>
                 </div>
 

@@ -12,6 +12,8 @@ import {
   restartBot,
   setBotState,
   updateGreetingMessage,
+  getServiceType, 
+  setServiceType
 } from "@/features/bot/api";
 import { getBlockedClients, unblockClient, blockClientByPhone } from "@/features/clients";
 import {
@@ -1741,6 +1743,102 @@ function AvailabilityBlocksCard() {
   );
 }
 
+function ServiceTypeCard() {
+  const { addToast } = useToast();
+  const [serviceType, setServiceTypeState] = useState<"LOCAL" | "MOBILE" | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getServiceType();
+        setServiceTypeState(data.serviceType);
+      } catch {
+        addToast({
+          title: "Erro ao carregar tipo de atendimento",
+          description: "Não foi possível verificar a configuração.",
+          type: "error",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    void load();
+  }, [addToast]);
+
+  async function handleChange(value: "LOCAL" | "MOBILE") {
+    try {
+      setIsSaving(true);
+      const updated = await setServiceType(value);
+      setServiceTypeState(updated.serviceType);
+      addToast({
+        title: "Configuração salva",
+        description: value === "LOCAL"
+          ? "Atendimento definido como local fixo."
+          : "Atendimento definido como a domicílio.",
+        type: "success",
+      });
+    } catch {
+      addToast({
+        title: "Erro ao salvar",
+        description: "Tente novamente em instantes.",
+        type: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl border border-(--color-border-soft) bg-(--color-bg-soft) px-4 py-4">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-(--color-text-disabled) border-r-transparent" />
+        <p className="text-sm text-(--color-text-secondary)">Carregando tipo de atendimento...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-(--color-border-soft) bg-(--color-bg-card) p-5 sm:p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-disabled)">
+        Tipo de atendimento
+      </p>
+      <p className="mt-2 text-sm text-(--color-text-secondary)">
+        Define se o bot pergunta o endereço do cliente durante o agendamento.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <button
+          onClick={() => void handleChange("LOCAL")}
+          disabled={isSaving || serviceType === "LOCAL"}
+          className={`flex-1 rounded-xl border px-4 py-3 text-left transition-colors ${
+            serviceType === "LOCAL"
+              ? "border-(--color-accent) bg-(--color-accent)/10 text-(--color-accent)"
+              : "border-(--color-border-soft) bg-(--color-bg-soft) text-(--color-text-secondary) hover:border-(--color-accent)/50"
+          }`}
+        >
+          <p className="text-sm font-semibold">📍 Local fixo</p>
+          <p className="mt-1 text-xs opacity-80">O cliente vai até a barbearia. Endereço não é solicitado.</p>
+        </button>
+
+        <button
+          onClick={() => void handleChange("MOBILE")}
+          disabled={isSaving || serviceType === "MOBILE"}
+          className={`flex-1 rounded-xl border px-4 py-3 text-left transition-colors ${
+            serviceType === "MOBILE"
+              ? "border-(--color-accent) bg-(--color-accent)/10 text-(--color-accent)"
+              : "border-(--color-border-soft) bg-(--color-bg-soft) text-(--color-text-secondary) hover:border-(--color-accent)/50"
+          }`}
+        >
+          <p className="text-sm font-semibold">🏠 A domicílio</p>
+          <p className="mt-1 text-xs opacity-80">O barbeiro vai até o cliente. Endereço é solicitado no agendamento.</p>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ConfiguracoesPage() {
   return (
     <section className="container-shell pt-6 sm:pt-8">
@@ -1750,6 +1848,49 @@ export default function ConfiguracoesPage() {
         <p className="mt-2 text-sm text-(--color-text-secondary) sm:text-base">
           Defina parâmetros operacionais, integrações e comportamento do painel.
         </p>
+      </div>
+
+      
+
+      <div className="mt-6 grid grid-cols-1 gap-5">
+        <div className="reveal-up" style={{ animationDelay: "80ms" }}>
+          <WahaSessionsCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "120ms" }}>
+          <BotStatusCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "140ms" }}>
+          <ServiceTypeCard />
+        </div>
+
+        <div className="mt-2 grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <div className="reveal-up" style={{ animationDelay: "160ms" }}>
+            <WeeklyAvailabilityCard />
+          </div>
+
+          <div className="reveal-up" style={{ animationDelay: "200ms" }}>
+            <AvailabilityBlocksCard />
+          </div>
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "240ms" }}>
+          <GreetingEditorCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "280ms" }}>
+          <BlockedClientsCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "320ms" }}>
+          <BlockByPhoneCard />
+        </div>
+
+        <div className="reveal-up" style={{ animationDelay: "40ms" }}>
+          <AdminCredentialsCard />
+        </div>        
+
       </div>
 
       <div className="mt-4 surface-panel reveal-up px-6 py-4 sm:px-8 sm:py-6">
@@ -1776,41 +1917,6 @@ export default function ConfiguracoesPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-5">
-        <div className="reveal-up" style={{ animationDelay: "40ms" }}>
-          <AdminCredentialsCard />
-        </div>
-
-        <div className="reveal-up" style={{ animationDelay: "80ms" }}>
-          <WahaSessionsCard />
-        </div>
-
-        <div className="reveal-up" style={{ animationDelay: "120ms" }}>
-          <BotStatusCard />
-        </div>
-
-        <div className="mt-2 grid grid-cols-1 gap-5 xl:grid-cols-2">
-          <div className="reveal-up" style={{ animationDelay: "160ms" }}>
-            <WeeklyAvailabilityCard />
-          </div>
-
-          <div className="reveal-up" style={{ animationDelay: "200ms" }}>
-            <AvailabilityBlocksCard />
-          </div>
-        </div>
-
-        <div className="reveal-up" style={{ animationDelay: "240ms" }}>
-          <GreetingEditorCard />
-        </div>
-
-        <div className="reveal-up" style={{ animationDelay: "280ms" }}>
-          <BlockedClientsCard />
-        </div>
-
-        <div className="reveal-up" style={{ animationDelay: "320ms" }}>
-          <BlockByPhoneCard />
-        </div>
-      </div>
     </section>
   );
 }

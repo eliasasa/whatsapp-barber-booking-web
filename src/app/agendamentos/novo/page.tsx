@@ -229,14 +229,6 @@ export default function NovoAgendamentoPage() {
       return;
     }
 
-    if (!address.trim()) {
-      addToast({
-        title: "Campo obrigatório",
-        description: "Informe o endereço do atendimento.",
-        type: "error",
-      });
-      return;
-    }
 
     try {
       setIsSaving(true);
@@ -275,7 +267,7 @@ export default function NovoAgendamentoPage() {
         clientId: clientId.trim(),
         serviceId: serviceId.trim(),
         startAt: isoString,
-        address: address.trim(),
+        address: address.trim() || undefined,
         notes: notes.trim() || undefined,
       });
 
@@ -425,7 +417,7 @@ export default function NovoAgendamentoPage() {
               className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-(--color-text-secondary)"
             >
               <span>Endereço</span>
-              <span className="text-(--color-status-busy)">*</span>
+              <span className="text-xs font-normal text-(--color-text-secondary)/60">(opcional)</span>
             </label>
             <input
               id="address"
@@ -472,7 +464,7 @@ export default function NovoAgendamentoPage() {
           <Button
             type="submit"
             isLoading={isSaving}
-            disabled={isLoadingData || !clientId || !serviceId || !startAt || !address.trim()}
+            disabled={isLoadingData || !clientId || !serviceId || !startAt}
             rightIcon={<span>{">"}</span>}
             className="flex-1"
           >

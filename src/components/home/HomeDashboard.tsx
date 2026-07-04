@@ -108,9 +108,7 @@ function AppointmentCard({
   return (
     <article
       className="rounded-2xl border border-(--color-border-soft) bg-(--color-bg-card) p-4 shadow-[0_12px_28px_rgba(7,9,14,0.16)] transition-transform duration-200 hover:-translate-y-0.5"
-      style={{
-        opacity: isPast ? 0.82 : 1,
-      }}
+      style={{ opacity: isPast ? 0.82 : 1 }}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
@@ -135,6 +133,12 @@ function AppointmentCard({
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-(--color-text-secondary)">
         <span>{formatAppointmentDate(appointmentDate)}</span>
+        {appointment.address && (
+          <>
+            <span className="text-(--color-text-disabled)">·</span>
+            <span>📍 {appointment.address}</span>
+          </>
+        )}
       </div>
 
       <div className="mt-4 flex gap-2">
@@ -364,9 +368,6 @@ export function HomeDashboard() {
             <h1 className="text-3xl font-semibold text-(--color-text-primary) sm:text-4xl">
               Agenda da barbearia
             </h1>
-            <p className="mt-3 max-w-xl text-sm text-(--color-text-secondary) sm:text-base">
-              Hoje a visão fica separada entre próximos e passados, com busca simples para localizar nome ou data sem poluir a tela.
-            </p>
           </div>
 
           <div className="surface-card inline-flex items-center gap-3 self-start px-4 py-2">

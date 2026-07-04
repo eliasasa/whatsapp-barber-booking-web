@@ -40,6 +40,7 @@ function EditarAgendamentoPageContent() {
   const [startAtInput, setStartAtInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [addressInput, setAddressInput] = useState("");
 
   function handleEditClient(clientId: string) {
     router.push(`/clientes/${encodeURIComponent(clientId)}/editar`);
@@ -86,6 +87,9 @@ function EditarAgendamentoPageContent() {
           setAppointment(data);
           setStartAtInput(toDatetimeLocalValue(data.startAt));
         }
+
+        setAddressInput(data.address ?? "");
+
       } catch {
         if (mounted) {
           addToast({
@@ -133,14 +137,18 @@ function EditarAgendamentoPageContent() {
       setIsSaving(true);
 
       const isoStartAt = new Date(startAtInput).toISOString();
-      const updated = await rescheduleAppointment(id, { newStartAt: isoStartAt });
+      
+      const updated = await rescheduleAppointment(id, { 
+        newStartAt: isoStartAt,
+        address: addressInput || undefined,
+      });
 
       setAppointment(updated);
       setStartAtInput(toDatetimeLocalValue(updated.startAt));
       
       addToast({
         title: "Agendamento reagendado",
-        description: "O horário foi atualizado com sucesso.",
+        description: "O agendamento foi atualizado com sucesso.",
         type: "success",
       });
     } catch (caughtError) {
@@ -205,6 +213,20 @@ function EditarAgendamentoPageContent() {
           </div>
         </div>
 
+        <div className="md:col-span-2">
+          <label htmlFor="address" className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">
+            Endereço
+          </label>
+          <input
+            id="address"
+            type="text"
+            value={addressInput}
+            onChange={(event) => setAddressInput(event.target.value)}
+            placeholder="Atendimento local"
+            className="w-full rounded-xl border border-[var(--color-border-soft)] bg-[var(--color-bg-dark)] px-4 py-3 text-[var(--color-text-primary)] outline-none transition-colors placeholder:text-[var(--color-text-disabled)] focus:border-[var(--color-accent)]"
+          />
+        </div>
+
         <div>
           <label htmlFor="startAt" className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">
             NOVO HORÁRIO
@@ -217,6 +239,8 @@ function EditarAgendamentoPageContent() {
             className="w-full rounded-xl border border-[var(--color-border-soft)] bg-[var(--color-bg-dark)] px-4 py-3 text-[var(--color-text-primary)] outline-none transition-colors focus:border-[var(--color-accent)]"
           />
         </div>
+
+
 
         <div className="flex flex-col sm:flex-row gap-2">
           <Button type="submit" isLoading={isSaving} rightIcon={<span>{">"}</span>}>

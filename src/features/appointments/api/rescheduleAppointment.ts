@@ -4,6 +4,7 @@ import type { Appointment } from "@/types/appointment";
 
 type ReschedulePayload = {
   newStartAt: string;
+  address?: string;
 };
 
 export async function rescheduleAppointment(
