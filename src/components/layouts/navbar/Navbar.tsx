@@ -13,7 +13,9 @@ export default function Navbar() {
         { url: "/servicos", label: "Serviços" },
         { url: "/agendamentos", label: "Agenda" },
         { url: "/clientes", label: "Clientes" },
+        { url: "/broadcast", label: "Campanhas" },
         { url: "/configuracoes", label: "Configurações" },
+        
     ];
 
     return (
